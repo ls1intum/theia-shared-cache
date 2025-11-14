@@ -1,0 +1,12 @@
+{{- if .Values.gradleConfig.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "cache-node.fullname" . }}-gradle-config
+  labels:
+    app: {{ include "cache-node.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+data:
+  gradle.properties: |-
+{{ .Values.gradleConfig.gradleProperties | indent 4 }}
+{{- end }}
