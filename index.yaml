@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  theia-shared-cache:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2025-11-14T14:00:25.621827978Z"
+    description: A Helm chart for Kubernetes
+    digest: 44b362c7a1f9c97197eff6ba3ed3c0b1b01323aa5b9dfd37885ea98d56125deb
+    name: theia-shared-cache
+    type: application
+    urls:
+    - https://ls1intum.github.io/theia-shared-cache/helm/theia-shared-cache-1.0.0.tgz
+    version: 1.0.0
+generated: "2025-11-14T14:00:25.62046816Z"
