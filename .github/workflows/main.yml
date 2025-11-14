@@ -1,0 +1,62 @@
+name: Release Helm Charts
+
+concurrency: release-helm
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'temp/**'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: 'src'
+          ref: 'main'
+          fetch-depth: 0
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: 'dest'
+          ref: 'theia-shared-cache-helm'
+          fetch-depth: 0
+
+      - name: Install Helm
+        uses: azure/setup-helm@v1
+
+      - name: Update New Files and push to master branch
+        shell: bash
+        working-directory: src
+        run: |
+          helm repo index ./temp --merge ../dest/index.yaml --url https://ls1intum.github.io/theia-shared-cache/helm/
+          mkdir -p ../dest/helm
+          echo "Copying files..."
+          shopt -s extglob
+          mkdir -p ./helm/
+          echo "n" | cp -pr ./temp/!(index.yaml) ../dest/helm/
+          echo "n" | cp -pr ./temp/!(index.yaml) ./helm/
+          echo "n" | cp -pr ./temp/index.yaml ../dest/
+          echo "y" | rm -rf ./temp/*
+          git config user.name "KevinGruber2001"
+          git config user.email "kevingruber01@protonmail.com"
+          git add .
+          git commit -m "Updated from ref: $GITHUB_SHA"
+          git push
+
+      - name: Push New Files
+        shell: bash
+        working-directory: dest
+        run: |
+          git config user.name "KevinGruber2001"
+          git config user.email "kevingruber01@protonmail.com"
+          git add $(git ls-files -o --exclude-standard)
+          git add index.yaml
+          git commit -m "Updated from ref: $GITHUB_SHA"
+          git push
