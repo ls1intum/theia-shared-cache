@@ -1,0 +1,15 @@
+# Minimal values for cache-node chart
+replicaCount: 1
+
+image:
+  repository: gradle/build-cache-node
+  tag: "21.2"
+  pullPolicy: IfNotPresent
+
+# Persistence: used for StatefulSet volumeClaimTemplates
+persistence:
+  size: 10Gi
+  storageClass: "standard"
+
+# Resources applied to the container. Keep empty to use cluster defaults.
+resources: {}
