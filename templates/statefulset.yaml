@@ -1,17 +1,16 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "cache-node.fullname" . }}
+  name: build-cache-node
   labels:
     app.kubernetes.io/part-of: gradle-enterprise
     app.kubernetes.io/component: build-cache-node
 spec:
-  serviceName: {{ include "cache-node.fullname" . }}
-  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       app.kubernetes.io/part-of: gradle-enterprise
       app.kubernetes.io/component: build-cache-node
+  serviceName: build-cache-node
   template:
     metadata:
       labels:
@@ -19,31 +18,34 @@ spec:
         app.kubernetes.io/component: build-cache-node
     spec:
       containers:
-      - name: build-cache-node
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-        imagePullPolicy: {{ .Values.image.pullPolicy }}
-        args: ["start"]
-        ports:
-        - name: http
-          containerPort: 5071
-        - name: grpc-bazel
-          containerPort: 6011
-        resources:
-          {{- toYaml .Values.resources | nindent 10 }}
-        env:
-        - name: EXCLUSIVE_VOLUME_SIZE
-          value: "{{ .Values.persistence.size }}"
-        volumeMounts:
-        - name: build-cache-node-data-volume
-          mountPath: /data
+        - name: build-cache-node
+          image: gradle/build-cache-node:21.2
+          args: ["start"]
+          ports:
+            - name: http
+              containerPort: 5071
+            - name: grpc-bazel
+              containerPort: 6011
+          resources:
+            requests:
+              memory: 1Gi
+              cpu: 0.5
+            limits:
+              memory: 2Gi
+              cpu: 1.5
+          env:
+            - name: EXCLUSIVE_VOLUME_SIZE
+              value: "10Gi" # Change this to the appropriate storage size
+          volumeMounts:
+            - mountPath: /data
+              name: build-cache-node-data-volume
   volumeClaimTemplates:
-  - metadata:
-      name: build-cache-node-data-volume
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      resources:
-        requests:
-          storage: {{ .Values.persistence.size | quote }}
-      {{- if .Values.persistence.storageClass }}
-      storageClassName: {{ .Values.persistence.storageClass }}
-      {{- end }}
+    - metadata:
+        name: build-cache-node-data-volume
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: "10Gi" # Change this to the appropriate storage size
+        storageClassName: "standard" # Change this to the appropriate storage class

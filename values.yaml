@@ -1,4 +1,4 @@
-# Minimal values for cache-node chart
+# Minimal values for theia-shared-cache chart
 replicaCount: 1
 
 image:
@@ -13,15 +13,3 @@ persistence:
 
 # Resources applied to the container. Keep empty to use cluster defaults.
 resources: {}
-
-# Gradle configmap settings
-gradleConfig:
-  # If true, the chart will create a ConfigMap named <release>-gradle-config
-  enabled: true
-  # Content of the gradle.properties file that will be placed in the ConfigMap
-  # The operator should mount this file with subPath as /home/theia/.gradle/gradle.properties
-  gradleProperties: |-
-    org.gradle.caching=true
-    org.gradle.caching.remote.push=true
-    # Replace the URL below if your service name or port differ
-    org.gradle.caching.remote.url=http://cache-node:5071

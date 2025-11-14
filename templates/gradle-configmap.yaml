@@ -1,12 +1,13 @@
-{{- if .Values.gradleConfig.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "cache-node.fullname" . }}-gradle-config
+  name: {{ include "theia-shared-cache.fullname" . }}-gradle-config
   labels:
-    app: {{ include "cache-node.name" . }}
+    app: {{ include "theia-shared-cache.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version }}
 data:
   gradle.properties: |-
-{{ .Values.gradleConfig.gradleProperties | indent 4 }}
-{{- end }}
+    org.gradle.caching=true
+    org.gradle.caching.remote.push=true
+    # Replace the URL below if your service name or port differ
+    org.gradle.caching.remote.url=http://theia-shared-cache:5071

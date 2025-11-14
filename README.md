@@ -1,4 +1,4 @@
-# cache-node Helm chart
+# theia-shared-cache Helm chart
 
 Helm chart to deploy the official Gradle Build Cache Node using the image `gradle/build-cache-node`.
 
@@ -28,7 +28,8 @@ Port forwarding / usage
 If you deployed as ClusterIP (default), port-forward the service to test locally:
 
 ```bash
-kubectl port-forward svc/my-cache-cache-node 5071:5071
+# example: port-forward the deployed service (release name `my-cache`)
+kubectl port-forward svc/my-cache-theia-shared-cache 5071:5071
 # then configure your Gradle build cache to point at http://127.0.0.1:5071
 ```
 

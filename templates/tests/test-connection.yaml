@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: "{{ include "cache-node.fullname" . }}-test-connection"
+  name: "{{ include "theia-shared-cache.fullname" . }}-test-connection"
   labels:
-    {{- include "cache-node.labels" . | nindent 4 }}
+  {{- include "theia-shared-cache.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": test
 spec:
@@ -11,5 +11,5 @@ spec:
     - name: wget
       image: busybox
       command: ['wget']
-  args: ['http://{{ include "cache-node.fullname" . }}:5071']
+  args: ['http://{{ include "theia-shared-cache.fullname" . }}:5071']
   restartPolicy: Never

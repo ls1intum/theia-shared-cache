@@ -1,8 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: { { include "cache-node.fullname" . } }
-  labels: { { - include "cache-node.labels" . | nindent 4 } }
+  name: build-cache-node
 spec:
   selector:
     app.kubernetes.io/part-of: gradle-enterprise
@@ -10,9 +9,5 @@ spec:
   ports:
     - name: http
       port: 5071
-      targetPort: http
-      protocol: TCP
     - name: grpc-bazel
       port: 6011
-      targetPort: grpc-bazel
-      protocol: TCP
