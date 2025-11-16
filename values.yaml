@@ -13,3 +13,10 @@ persistence:
 
 # Resources applied to the container. Keep empty to use cluster defaults.
 resources: {}
+
+# Gradle configmap settings (operator can mount this ConfigMap)
+gradleConfig:
+  enabled: true
+  # If you want to override the default gradle.properties entirely, set this string.
+  # If empty, the template will write a sensible default using the release service name.
+  gradleProperties: ""

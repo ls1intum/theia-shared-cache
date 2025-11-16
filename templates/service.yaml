@@ -1,13 +1,18 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: build-cache-node
+  name: {{ include "theia-shared-cache.fullname" . }}-node
+  labels:
+    app.kubernetes.io/name: {{ include "theia-shared-cache.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   selector:
-    app.kubernetes.io/part-of: gradle-enterprise
-    app.kubernetes.io/component: build-cache-node
+    app.kubernetes.io/name: {{ include "theia-shared-cache.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
   ports:
     - name: http
       port: 5071
+      targetPort: 5071
     - name: grpc-bazel
       port: 6011
+      targetPort: 6011

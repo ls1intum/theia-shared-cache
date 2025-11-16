@@ -9,5 +9,5 @@ data:
   gradle.properties: |-
     org.gradle.caching=true
     org.gradle.caching.remote.push=true
-    # Replace the URL below if your service name or port differ
-    org.gradle.caching.remote.url=http://theia-shared-cache:5071
+    # Use the release-scoped service name so DNS resolves correctly within the cluster
+    org.gradle.caching.remote.url=http://{{ include "theia-shared-cache.fullname" . }}-node.{{ .Release.Namespace }}.svc.cluster.local:5071

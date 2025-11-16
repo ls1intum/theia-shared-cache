@@ -1,25 +1,26 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: build-cache-node
+  name: {{ include "theia-shared-cache.fullname" . }}-node
   labels:
-    app.kubernetes.io/part-of: gradle-enterprise
-    app.kubernetes.io/component: build-cache-node
+    app.kubernetes.io/name: {{ include "theia-shared-cache.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/part-of: gradle-enterprise
-      app.kubernetes.io/component: build-cache-node
-  serviceName: build-cache-node
+      app.kubernetes.io/name: {{ include "theia-shared-cache.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  serviceName: {{ include "theia-shared-cache.fullname" . }}-node
+  replicas: {{ .Values.replicaCount | default 1 }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/part-of: gradle-enterprise
-        app.kubernetes.io/component: build-cache-node
+        app.kubernetes.io/name: {{ include "theia-shared-cache.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       containers:
         - name: build-cache-node
-          image: gradle/build-cache-node:21.2
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           args: ["start"]
           ports:
             - name: http
@@ -27,25 +28,20 @@ spec:
             - name: grpc-bazel
               containerPort: 6011
           resources:
-            requests:
-              memory: 1Gi
-              cpu: 0.5
-            limits:
-              memory: 2Gi
-              cpu: 1.5
+{{ toYaml .Values.resources | indent 12 }}
           env:
             - name: EXCLUSIVE_VOLUME_SIZE
-              value: "10Gi" # Change this to the appropriate storage size
+              value: "{{ .Values.persistence.size }}"
           volumeMounts:
             - mountPath: /data
-              name: build-cache-node-data-volume
+              name: {{ include "theia-shared-cache.fullname" . }}-data
   volumeClaimTemplates:
     - metadata:
-        name: build-cache-node-data-volume
+        name: {{ include "theia-shared-cache.fullname" . }}-data
       spec:
         accessModes:
           - ReadWriteOnce
         resources:
           requests:
-            storage: "10Gi" # Change this to the appropriate storage size
-        storageClassName: "standard" # Change this to the appropriate storage class
+            storage: "{{ .Values.persistence.size }}"
+        storageClassName: "{{ .Values.persistence.storageClass }}"
