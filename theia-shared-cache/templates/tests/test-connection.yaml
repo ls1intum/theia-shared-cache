@@ -1,15 +1,16 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: "{{ include "theia-shared-cache.fullname" . }}-test-connection"
+  name: "theia-shared-cache-test-connection"
   labels:
-  {{- include "theia-shared-cache.labels" . | nindent 4 }}
+    app.kubernetes.io/name: theia-shared-cache
+    app.kubernetes.io/instance: theia-shared-cache
   annotations:
     "helm.sh/hook": test
 spec:
   containers:
     - name: wget
       image: busybox
-      command: ['wget']
-  args: ['http://{{ include "theia-shared-cache.fullname" . }}:5071']
+      command: ["wget"]
+  args: ["http://theia-shared-cache:5071"]
   restartPolicy: Never

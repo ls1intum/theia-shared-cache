@@ -1,25 +1,25 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "theia-shared-cache.fullname" . }}-node
+  name: theia-shared-cache
   labels:
-    app.kubernetes.io/name: {{ include "theia-shared-cache.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/name: theia-shared-cache
+    app.kubernetes.io/instance: theia-shared-cache
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ include "theia-shared-cache.name" . }}
-      app.kubernetes.io/instance: {{ .Release.Name }}
-  serviceName: {{ include "theia-shared-cache.fullname" . }}-node
+      app.kubernetes.io/name: theia-shared-cache
+      app.kubernetes.io/instance: theia-shared-cache
+  serviceName: theia-shared-cache
   replicas: {{ .Values.replicaCount | default 1 }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: {{ include "theia-shared-cache.name" . }}
-        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/name: theia-shared-cache
+        app.kubernetes.io/instance: theia-shared-cache
     spec:
       containers:
-        - name: build-cache-node
+        - name: theia-shared-cache
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           args: ["start"]
           ports:
@@ -28,16 +28,16 @@ spec:
             - name: grpc-bazel
               containerPort: 6011
           resources:
-{{ toYaml .Values.resources | indent 12 }}
+{{ toYaml .Values.resources | nindent 12 }}
           env:
             - name: EXCLUSIVE_VOLUME_SIZE
               value: "{{ .Values.persistence.size }}"
           volumeMounts:
             - mountPath: /data
-              name: {{ include "theia-shared-cache.fullname" . }}-data
+              name: theia-shared-cache-data-volume
   volumeClaimTemplates:
     - metadata:
-        name: {{ include "theia-shared-cache.fullname" . }}-data
+        name: theia-shared-cache-data-volume
       spec:
         accessModes:
           - ReadWriteOnce
