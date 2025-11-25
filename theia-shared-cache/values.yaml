@@ -12,4 +12,10 @@ persistence:
   storageClass: "standard"
 
 # Resources applied to the container. Keep empty to use cluster defaults.
-resources: {}
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "10Gi"
+    cpu: "1000m"
