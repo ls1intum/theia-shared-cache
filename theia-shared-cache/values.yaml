@@ -23,3 +23,8 @@ resources:
 # UI Ingress Configuration
 ui:
   enabled: false # Set to true to enable the web UI
+
+hosts:
+  configuration:
+    baseHost: ""
+    cache: ""
