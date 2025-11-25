@@ -29,22 +29,6 @@ spec:
               containerPort: 6011
           resources:
 {{ toYaml .Values.resources | nindent 12 }}
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-            initialDelaySeconds: 60
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
-            initialDelaySeconds: 30
-            periodSeconds: 5
-            timeoutSeconds: 3
-            failureThreshold: 3
           env:
             - name: EXCLUSIVE_VOLUME_SIZE
               value: "{{ .Values.persistence.size }}"
