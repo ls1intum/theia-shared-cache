@@ -3,6 +3,16 @@ entries:
   theia-shared-cache:
   - apiVersion: v2
     appVersion: 1.16.0
+    created: "2025-11-25T17:29:07.191665236Z"
+    description: A Gradle Shared Cache for Theia IDE deployments in Kubernetes
+    digest: c8eefd604e9ebb5b963e454224237cf99490a4a238cd122447624e5f911448f3
+    name: theia-shared-cache
+    type: application
+    urls:
+    - https://github.com/ls1intum/theia-shared-cache/releases/download/theia-shared-cache-0.1.3/theia-shared-cache-0.1.3.tgz
+    version: 0.1.3
+  - apiVersion: v2
+    appVersion: 1.16.0
     created: "2025-11-25T17:03:25.261752742Z"
     description: A Gradle Shared Cache for Theia IDE deployments in Kubernetes
     digest: 57641f3477dc27b8958f58ff55ce7e1ac2a8a917791b9cc2b7c90c962567bd18
@@ -31,4 +41,4 @@ entries:
     urls:
     - https://github.com/ls1intum/theia-shared-cache/releases/download/theia-shared-cache-0.1.0/theia-shared-cache-0.1.0.tgz
     version: 0.1.0
-generated: "2025-11-25T17:03:25.261770926Z"
+generated: "2025-11-25T17:29:07.191687758Z"
