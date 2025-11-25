@@ -7,20 +7,14 @@ metadata:
     app.kubernetes.io/name: theia-shared-cache
     app.kubernetes.io/instance: theia-shared-cache
     app.kubernetes.io/component: ui
-  annotations:
-    {{- if .Values.ui.tls.enabled }}
-    cert-manager.io/cluster-issuer: {{ .Values.ui.tls.issuerRef.name }}
-    {{- end }}
 spec:
   ingressClassName: nginx
-  {{- if .Values.ui.tls.enabled }}
   tls:
     - hosts:
-        - {{ .Values.ui.host }}
-      secretName: theia-shared-cache-ui-tls
-  {{- end }}
+        - {{ .Values.hosts.configuration.cache }}.{{ .Values.hosts.configuration.baseHost }}
+      secretName: cache-cert-secret  # References the cert created by theia-certificates
   rules:
-    - host: {{ .Values.ui.host }}
+    - host: {{ .Values.hosts.configuration.cache }}.{{ .Values.hosts.configuration.baseHost }}
       http:
         paths:
           - path: /
