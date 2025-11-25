@@ -12,4 +12,22 @@ persistence:
   storageClass: "standard"
 
 # Resources applied to the container. Keep empty to use cluster defaults.
-resources: {}
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "10Gi"
+    cpu: "1000m"
+
+# UI Ingress Configuration
+ui:
+  enabled: false # Set to true to enable the web UI
+  host: "" # e.g., "gradle-cache.theia.artemis.cit.tum.de"
+
+  # TLS/Certificate settings
+  tls:
+    enabled: true
+    issuerRef:
+      name: "letsencrypt-prod"
+      kind: "ClusterIssuer"

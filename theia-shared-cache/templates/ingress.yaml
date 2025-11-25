@@ -1,0 +1,33 @@
+{{- if .Values.ui.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: theia-shared-cache-ui
+  labels:
+    app.kubernetes.io/name: theia-shared-cache
+    app.kubernetes.io/instance: theia-shared-cache
+    app.kubernetes.io/component: ui
+  annotations:
+    {{- if .Values.ui.tls.enabled }}
+    cert-manager.io/cluster-issuer: {{ .Values.ui.tls.issuerRef.name }}
+    {{- end }}
+spec:
+  ingressClassName: nginx
+  {{- if .Values.ui.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.ui.host }}
+      secretName: theia-shared-cache-ui-tls
+  {{- end }}
+  rules:
+    - host: {{ .Values.ui.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: theia-shared-cache
+                port:
+                  number: 5071
+{{- end }}
