@@ -36,33 +36,22 @@ spec:
           resources:
 {{ toYaml .Values.resources | nindent 12 }}
           livenessProbe:
-            {{- if .Values.tls.enabled }}
-            tcpSocket:
-              port: 5071
-            {{- else }}
             httpGet:
               path: /cache-node-info/health
               port: http
-            {{- end }}
             initialDelaySeconds: 60
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
 
           readinessProbe:
-            {{- if .Values.tls.enabled }}
-            tcpSocket:
-              port: 5071
-            {{- else }}
             httpGet:
               path: /cache-node-info/health
               port: http
-            {{- end }}
             initialDelaySeconds: 30
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 3
-
           env:
             - name: EXCLUSIVE_VOLUME_SIZE
               value: "{{ .Values.persistence.size }}"
