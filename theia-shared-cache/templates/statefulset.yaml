@@ -21,9 +21,15 @@ spec:
       containers:
         - name: theia-shared-cache
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          args: ["start"]
+          args: 
+            - "start"
+            {{- if .Values.tls.enabled }}
+            - "--tls"
+            - "--tls-cert=/etc/tls/tls.crt"
+            - "--tls-key=/etc/tls/tls.key"
+            {{- end }}
           ports:
-            - name: http
+            - name: {{- if .Values.tls.enabled }} https{{- else }} http{{- end }}
               containerPort: 5071
             - name: grpc-bazel
               containerPort: 6011
@@ -32,7 +38,10 @@ spec:
           livenessProbe:
             httpGet:
               path: /cache-node-info/health
-              port: http
+              port: {{ if .Values.tls.enabled }}https{{ else }}http{{ end }}
+              {{- if .Values.tls.enabled }}
+              scheme: HTTPS
+              {{- end }}
             initialDelaySeconds: 60
             periodSeconds: 10
             timeoutSeconds: 5
@@ -41,7 +50,10 @@ spec:
           readinessProbe:
             httpGet:
               path: /cache-node-info/health
-              port: http
+              port: {{ if .Values.tls.enabled }}https{{ else }}http{{ end }}
+              {{- if .Values.tls.enabled }}
+              scheme: HTTPS
+              {{- end }}
             initialDelaySeconds: 30
             periodSeconds: 5
             timeoutSeconds: 3
@@ -52,6 +64,17 @@ spec:
           volumeMounts:
             - mountPath: /data
               name: theia-shared-cache-data-volume
+            {{- if .Values.tls.enabled }}
+            - mountPath: /etc/tls
+              name: tls
+              readOnly: true
+            {{- end }}
+      {{- if .Values.tls.enabled }}
+      volumes:
+        - name: tls
+          secret:
+            secretName: {{ .Values.tls.secretName }}
+      {{- end }}
   volumeClaimTemplates:
     - metadata:
         name: theia-shared-cache-data-volume
