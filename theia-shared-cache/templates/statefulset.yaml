@@ -36,18 +36,16 @@ spec:
           resources:
 {{ toYaml .Values.resources | nindent 12 }}
           livenessProbe:
-            httpGet:
-              path: /cache-node-info/health
-              port: http
+            tcpSocket:
+              port: 5071
             initialDelaySeconds: 60
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
 
           readinessProbe:
-            httpGet:
-              path: /cache-node-info/health
-              port: http
+            tcpSocket:
+              port: 5071
             initialDelaySeconds: 30
             periodSeconds: 5
             timeoutSeconds: 3
