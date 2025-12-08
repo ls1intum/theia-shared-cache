@@ -27,6 +27,7 @@ spec:
             - "--tls"
             - "--tls-cert=/etc/tls/tls.crt"
             - "--tls-key=/etc/tls/tls.key"
+            - "--allow-untrusted-ssl"
             {{- end }}
           ports:
             - name: {{- if .Values.tls.enabled }} https{{- else }} http{{- end }}
