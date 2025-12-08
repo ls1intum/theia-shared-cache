@@ -8,7 +8,6 @@ image:
 
 tls:
   enabled: false
-  secretName: cache-internal-cert-secret
 
 # Persistence: used for StatefulSet volumeClaimTemplates
 persistence:
