@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ .Release.Name }}-test-connection"
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  containers:
+    - name: test-ping
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Testing cache server ping endpoint..."
+          wget -q -O- http://{{ .Release.Name }}-cache:{{ .Values.cacheServer.port }}/ping
+          if [ $? -eq 0 ]; then
+            echo "Ping test passed!"
+          else
+            echo "Ping test failed!"
+            exit 1
+          fi
+
+          echo "Testing cache server health endpoint..."
+          wget -q -O- http://{{ .Release.Name }}-cache:{{ .Values.cacheServer.port }}/health
+          if [ $? -eq 0 ]; then
+            echo "Health test passed!"
+          else
+            echo "Health test failed!"
+            exit 1
+          fi
+
+          {{- if .Values.minio.enabled }}
+          echo "Testing MinIO connectivity..."
+          wget -q -O- http://{{ .Release.Name }}-minio:9000/minio/health/live
+          if [ $? -eq 0 ]; then
+            echo "MinIO test passed!"
+          else
+            echo "MinIO test failed!"
+            exit 1
+          fi
+          {{- end }}
+
+          echo "All tests passed!"
+  restartPolicy: Never

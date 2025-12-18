@@ -1,0 +1,139 @@
+package config
+
+import (
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/spf13/viper"
+)
+
+type Config struct {
+	Server  ServerConfig  `mapstructure:"server"`
+	Storage StorageConfig `mapstructure:"storage"`
+	Cache   CacheConfig   `mapstructure:"cache"`
+	Auth    AuthConfig    `mapstructure:"auth"`
+	Metrics MetricsConfig `mapstructure:"metrics"`
+	Logging LoggingConfig `mapstructure:"logging"`
+}
+
+type ServerConfig struct {
+	Port         int           `mapstructure:"port"`
+	ReadTimeout  time.Duration `mapstructure:"read_timeout"`
+	WriteTimeout time.Duration `mapstructure:"write_timeout"`
+}
+
+type StorageConfig struct {
+	Endpoint  string `mapstructure:"endpoint"`
+	AccessKey string `mapstructure:"access_key"`
+	SecretKey string `mapstructure:"secret_key"`
+	Bucket    string `mapstructure:"bucket"`
+	UseSSL    bool   `mapstructure:"use_ssl"`
+}
+
+type CacheConfig struct {
+	MaxEntrySizeMB int64 `mapstructure:"max_entry_size_mb"`
+}
+
+type AuthConfig struct {
+	Enabled bool       `mapstructure:"enabled"`
+	Users   []UserAuth `mapstructure:"users"`
+}
+
+type UserAuth struct {
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+}
+
+type MetricsConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+type LoggingConfig struct {
+	Level  string `mapstructure:"level"`
+	Format string `mapstructure:"format"`
+}
+
+func Load(configPath string) (*Config, error) {
+	v := viper.New()
+
+	// Set defaults
+	v.SetDefault("server.port", 8080)
+	v.SetDefault("server.read_timeout", "30s")
+	v.SetDefault("server.write_timeout", "120s")
+
+	v.SetDefault("storage.endpoint", "localhost:9000")
+	v.SetDefault("storage.bucket", "gradle-cache")
+	v.SetDefault("storage.use_ssl", false)
+
+	v.SetDefault("cache.max_entry_size_mb", 100)
+
+	v.SetDefault("auth.enabled", true)
+
+	v.SetDefault("metrics.enabled", true)
+
+	v.SetDefault("logging.level", "info")
+	v.SetDefault("logging.format", "json")
+
+	// Read from config file if provided
+	if configPath != "" {
+		v.SetConfigFile(configPath)
+		if err := v.ReadInConfig(); err != nil {
+			return nil, fmt.Errorf("failed to read config file: %w", err)
+		}
+	}
+
+	// Enable environment variable overrides
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.AutomaticEnv()
+
+	// Bind specific environment variables
+	v.BindEnv("storage.access_key", "MINIO_ACCESS_KEY")
+	v.BindEnv("storage.secret_key", "MINIO_SECRET_KEY")
+	v.BindEnv("auth.users.0.password", "CACHE_PASSWORD")
+
+	var cfg Config
+	if err := v.Unmarshal(&cfg); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+	}
+
+	// Handle CACHE_PASSWORD environment variable for default user
+	if cachePassword := v.GetString("CACHE_PASSWORD"); cachePassword != "" {
+		if len(cfg.Auth.Users) > 0 {
+			cfg.Auth.Users[0].Password = cachePassword
+		}
+	}
+
+	return &cfg, nil
+}
+
+func (c *Config) Validate() error {
+	if c.Storage.Endpoint == "" {
+		return fmt.Errorf("storage.endpoint is required")
+	}
+	if c.Storage.AccessKey == "" {
+		return fmt.Errorf("storage.access_key is required")
+	}
+	if c.Storage.SecretKey == "" {
+		return fmt.Errorf("storage.secret_key is required")
+	}
+	if c.Storage.Bucket == "" {
+		return fmt.Errorf("storage.bucket is required")
+	}
+	if c.Auth.Enabled && len(c.Auth.Users) == 0 {
+		return fmt.Errorf("auth.users is required when auth is enabled")
+	}
+	for i, user := range c.Auth.Users {
+		if user.Username == "" {
+			return fmt.Errorf("auth.users[%d].username is required", i)
+		}
+		if user.Password == "" {
+			return fmt.Errorf("auth.users[%d].password is required", i)
+		}
+	}
+	return nil
+}
+
+func (c *Config) MaxEntrySizeBytes() int64 {
+	return c.Cache.MaxEntrySizeMB * 1024 * 1024
+}

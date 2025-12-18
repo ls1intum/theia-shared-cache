@@ -1,0 +1,104 @@
+# Cache Server Configuration
+cacheServer:
+  replicaCount: 1
+
+  image:
+    # Update this to your actual registry path after first push
+    repository: ghcr.io/kevingruber/theia-shared-cache/gradle-cache
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  port: 8080
+
+  # Timeouts
+  readTimeout: 30s
+  writeTimeout: 120s
+
+  # Service configuration
+  service:
+    type: ClusterIP
+
+  # Authentication
+  auth:
+    enabled: true
+    username: "gradle"
+    # IMPORTANT: Change this password in production!
+    password: "changeme"
+
+  # Cache configuration
+  config:
+    maxEntrySizeMB: 100
+
+  # Storage configuration (used when minio.enabled=false)
+  storage:
+    endpoint: ""
+    bucket: "gradle-cache"
+    useSSL: false
+
+  # Logging
+  logging:
+    level: "info"
+    format: "json"
+
+  # Resource limits
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+  # Optional node selector
+  nodeSelector: {}
+
+  # Optional tolerations
+  tolerations: []
+
+# MinIO Configuration
+minio:
+  enabled: true
+
+  image:
+    repository: minio/minio
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  # Authentication
+  auth:
+    # IMPORTANT: Change these credentials in production!
+    accessKey: "minioadmin"
+    secretKey: "minioadmin"
+
+  # Persistence
+  persistence:
+    enabled: true
+    size: 50Gi
+    # Leave empty to use default storage class
+    storageClass: ""
+
+  # Resource limits
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+
+  # Optional node selector
+  nodeSelector: {}
+
+  # Optional tolerations
+  tolerations: []
+
+# Metrics/Monitoring
+metrics:
+  enabled: true
+  serviceMonitor:
+    # Enable if using Prometheus Operator
+    enabled: false
+
+# Use an existing secret instead of creating one
+# The secret must contain: minio-access-key, minio-secret-key, cache-password
+existingSecret: ""

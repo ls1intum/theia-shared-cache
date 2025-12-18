@@ -1,0 +1,26 @@
+{{- if .Values.minio.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-minio
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}-minio
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: storage
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: api
+      port: 9000
+      targetPort: api
+      protocol: TCP
+    - name: console
+      port: 9001
+      targetPort: console
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: {{ .Chart.Name }}-minio
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
