@@ -1,0 +1,28 @@
+# Binaries
+gradle-cache
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of go coverage
+coverage.out
+coverage.html
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+
+# Local config overrides
+configs/config.local.yaml
+
+# Docker volumes (if not using named volumes)
+data/

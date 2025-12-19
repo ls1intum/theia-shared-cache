@@ -1,5 +1,0 @@
-1. Port-forward to access the build cache node locally:
-
-  kubectl --namespace {{ .Release.Namespace }} port-forward svc/theia-shared-cache 5071:5071
-
-Open http://127.0.0.1:5071 in your local Gradle build cache config to test the service.

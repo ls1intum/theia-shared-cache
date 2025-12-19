@@ -1,0 +1,163 @@
+package server
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/kevingruber/gradle-cache/internal/config"
+	"github.com/kevingruber/gradle-cache/internal/handler"
+	"github.com/kevingruber/gradle-cache/internal/middleware"
+	"github.com/kevingruber/gradle-cache/internal/storage"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rs/zerolog"
+)
+
+// Server represents the HTTP server.
+type Server struct {
+	cfg     *config.Config
+	router  *gin.Engine
+	storage storage.Storage
+	logger  zerolog.Logger
+	metrics *middleware.Metrics
+}
+
+// New creates a new server instance.
+func New(cfg *config.Config, store storage.Storage, logger zerolog.Logger) *Server {
+	// Set Gin mode based on log level
+	if cfg.Logging.Level == "debug" {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	s := &Server{
+		cfg:     cfg,
+		router:  gin.New(),
+		storage: store,
+		logger:  logger,
+	}
+
+	// Initialize metrics if enabled
+	if cfg.Metrics.Enabled {
+		s.metrics = middleware.NewMetrics("gradle_cache")
+	}
+
+	s.setupRoutes()
+	return s
+}
+
+// setupRoutes configures all HTTP routes.
+func (s *Server) setupRoutes() {
+	// Recovery middleware
+	s.router.Use(gin.Recovery())
+
+	// Logging middleware
+	s.router.Use(middleware.RequestLogger(s.logger))
+
+	// Metrics middleware
+	if s.metrics != nil {
+		s.router.Use(s.metrics.Middleware())
+	}
+
+	// Health endpoints (no auth required)
+	s.router.GET("/ping", s.handlePing)
+	s.router.GET("/health", s.handleHealth)
+
+	// Metrics endpoint (no auth required)
+	if s.cfg.Metrics.Enabled {
+		s.router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	}
+
+	// Cache endpoints
+	cacheHandler := handler.NewCacheHandler(
+		s.storage,
+		s.cfg.MaxEntrySizeBytes(),
+		s.logger,
+	)
+
+	// Create cache group with optional auth
+	cacheGroup := s.router.Group("/cache")
+	if s.cfg.Auth.Enabled {
+		cacheGroup.Use(middleware.BasicAuth(s.cfg.Auth.Users))
+	}
+
+	cacheGroup.GET("/:key", cacheHandler.Get)
+	cacheGroup.PUT("/:key", cacheHandler.Put)
+	cacheGroup.HEAD("/:key", cacheHandler.Head)
+}
+
+// handlePing is a simple health check endpoint.
+func (s *Server) handlePing(c *gin.Context) {
+	c.String(http.StatusOK, "pong")
+}
+
+// handleHealth performs a detailed health check including storage connectivity.
+func (s *Server) handleHealth(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	if err := s.storage.Ping(ctx); err != nil {
+		s.logger.Error().Err(err).Msg("health check failed: storage unreachable")
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"status":  "unhealthy",
+			"storage": "unreachable",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "healthy",
+		"storage": "connected",
+	})
+}
+
+// Run starts the HTTP server.
+func (s *Server) Run(ctx context.Context) error {
+	addr := fmt.Sprintf(":%d", s.cfg.Server.Port)
+
+	srv := &http.Server{
+		Addr:         addr,
+		Handler:      s.router,
+		ReadTimeout:  s.cfg.Server.ReadTimeout,
+		WriteTimeout: s.cfg.Server.WriteTimeout,
+	}
+
+	// Channel to capture server errors
+	errCh := make(chan error, 1)
+
+	go func() {
+		if s.cfg.Server.TLS.Enabled {
+			s.logger.Info().
+				Str("addr", addr).
+				Str("mode", "https").
+				Msg("starting server with TLS")
+			if err := srv.ListenAndServeTLS(s.cfg.Server.TLS.CertFile, s.cfg.Server.TLS.KeyFile); err != nil && err != http.ErrServerClosed {
+				errCh <- err
+			}
+		} else {
+			s.logger.Info().
+				Str("addr", addr).
+				Str("mode", "http").
+				Msg("starting server")
+			if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				errCh <- err
+			}
+		}
+	}()
+
+	// Wait for context cancellation or server error
+	select {
+	case <-ctx.Done():
+		s.logger.Info().Msg("shutting down server")
+		return srv.Shutdown(context.Background())
+	case err := <-errCh:
+		return err
+	}
+}
+
+// Router returns the Gin router for testing purposes.
+func (s *Server) Router() *gin.Engine {
+	return s.router
+}
