@@ -14,6 +14,12 @@ data:
       port: {{ .Values.cacheServer.port }}
       read_timeout: {{ .Values.cacheServer.readTimeout | default "30s" }}
       write_timeout: {{ .Values.cacheServer.writeTimeout | default "120s" }}
+      tls:
+        enabled: {{ .Values.cacheServer.tls.enabled }}
+        {{- if .Values.cacheServer.tls.enabled }}
+        cert_file: "/etc/certs/tls.crt"
+        key_file: "/etc/certs/tls.key"
+        {{- end }}
 
     storage:
       {{- if .Values.minio.enabled }}

@@ -93,6 +93,9 @@ spec:
             httpGet:
               path: /ping
               port: http
+              {{- if .Values.cacheServer.tls.enabled }}
+              scheme: HTTPS
+              {{- end }}
             initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 5
@@ -101,6 +104,9 @@ spec:
             httpGet:
               path: /health
               port: http
+              {{- if .Values.cacheServer.tls.enabled }}
+              scheme: HTTPS
+              {{- end }}
             initialDelaySeconds: 5
             periodSeconds: 5
             timeoutSeconds: 3
@@ -109,10 +115,21 @@ spec:
             - name: config
               mountPath: /etc/gradle-cache
               readOnly: true
+            {{- if .Values.cacheServer.tls.enabled }}
+            - name: tls-certs
+              mountPath: /etc/certs
+              readOnly: true
+            {{- end }}
       volumes:
         - name: config
           configMap:
             name: {{ .Release.Name }}-config
+        {{- if .Values.cacheServer.tls.enabled }}
+        - name: tls-certs
+          secret:
+            secretName: {{ .Values.cacheServer.tls.secretName }}
+            defaultMode: 0400
+        {{- end }}
       {{- if .Values.cacheServer.nodeSelector }}
       nodeSelector:
         {{- toYaml .Values.cacheServer.nodeSelector | nindent 8 }}

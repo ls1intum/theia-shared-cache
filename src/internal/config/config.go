@@ -21,6 +21,13 @@ type ServerConfig struct {
 	Port         int           `mapstructure:"port"`
 	ReadTimeout  time.Duration `mapstructure:"read_timeout"`
 	WriteTimeout time.Duration `mapstructure:"write_timeout"`
+	TLS          TLSConfig     `mapstructure:"tls"`
+}
+
+type TLSConfig struct {
+	Enabled  bool   `mapstructure:"enabled"`
+	CertFile string `mapstructure:"cert_file"`
+	KeyFile  string `mapstructure:"key_file"`
 }
 
 type StorageConfig struct {
@@ -61,6 +68,9 @@ func Load(configPath string) (*Config, error) {
 	v.SetDefault("server.port", 8080)
 	v.SetDefault("server.read_timeout", "30s")
 	v.SetDefault("server.write_timeout", "120s")
+	v.SetDefault("server.tls.enabled", false)
+	v.SetDefault("server.tls.cert_file", "/etc/certs/tls.crt")
+	v.SetDefault("server.tls.key_file", "/etc/certs/tls.key")
 
 	v.SetDefault("storage.endpoint", "localhost:9000")
 	v.SetDefault("storage.bucket", "gradle-cache")
@@ -129,6 +139,14 @@ func (c *Config) Validate() error {
 		}
 		if user.Password == "" {
 			return fmt.Errorf("auth.users[%d].password is required", i)
+		}
+	}
+	if c.Server.TLS.Enabled {
+		if c.Server.TLS.CertFile == "" {
+			return fmt.Errorf("server.tls.cert_file is required when TLS is enabled")
+		}
+		if c.Server.TLS.KeyFile == "" {
+			return fmt.Errorf("server.tls.key_file is required when TLS is enabled")
 		}
 	}
 	return nil

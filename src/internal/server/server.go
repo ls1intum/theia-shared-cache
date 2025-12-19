@@ -128,9 +128,22 @@ func (s *Server) Run(ctx context.Context) error {
 	errCh := make(chan error, 1)
 
 	go func() {
-		s.logger.Info().Str("addr", addr).Msg("starting server")
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			errCh <- err
+		if s.cfg.Server.TLS.Enabled {
+			s.logger.Info().
+				Str("addr", addr).
+				Str("mode", "https").
+				Msg("starting server with TLS")
+			if err := srv.ListenAndServeTLS(s.cfg.Server.TLS.CertFile, s.cfg.Server.TLS.KeyFile); err != nil && err != http.ErrServerClosed {
+				errCh <- err
+			}
+		} else {
+			s.logger.Info().
+				Str("addr", addr).
+				Str("mode", "http").
+				Msg("starting server")
+			if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				errCh <- err
+			}
 		}
 	}()
 

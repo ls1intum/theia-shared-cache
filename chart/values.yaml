@@ -10,6 +10,19 @@ cacheServer:
 
   port: 8080
 
+  # TLS Configuration
+  tls:
+    enabled: false
+    # Secret name containing tls.crt and tls.key
+    secretName: ""
+    # Optional: Use cert-manager to generate certificates
+    certManager:
+      enabled: false
+      # Name of the ClusterIssuer or Issuer
+      issuerName: "letsencrypt-prod"
+      # Type of issuer: ClusterIssuer or Issuer
+      issuerKind: "ClusterIssuer"
+
   # Timeouts
   readTimeout: 30s
   writeTimeout: 120s

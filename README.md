@@ -158,6 +158,9 @@ Key configuration options in `chart/values.yaml`:
 | `cacheServer.replicaCount` | Number of cache server replicas | `1` |
 | `cacheServer.image.repository` | Container image repository | `ghcr.io/kevingruber/theia-shared-cache/gradle-cache` |
 | `cacheServer.image.tag` | Container image tag | `latest` |
+| `cacheServer.tls.enabled` | Enable TLS/HTTPS | `false` |
+| `cacheServer.tls.secretName` | TLS certificate secret name | `""` |
+| `cacheServer.tls.certManager.enabled` | Use cert-manager for certificates | `false` |
 | `cacheServer.auth.username` | Authentication username | `gradle` |
 | `cacheServer.auth.password` | Authentication password | `changeme` |
 | `cacheServer.config.maxEntrySizeMB` | Maximum cache entry size | `100` |
@@ -167,6 +170,41 @@ Key configuration options in `chart/values.yaml`:
 | `minio.auth.secretKey` | MinIO secret key | `minioadmin` |
 
 For a complete list of configuration options, see the [Helm chart documentation](chart/README.md).
+
+### Enabling TLS/HTTPS
+
+To secure communication with TLS, you can use cert-manager or provide your own certificates. Here's a quick example:
+
+**With cert-manager (recommended):**
+```yaml
+cacheServer:
+  tls:
+    enabled: true
+    secretName: gradle-cache-tls
+    certManager:
+      enabled: true
+      issuerName: "letsencrypt-prod"
+      issuerKind: "ClusterIssuer"
+```
+
+**With self-signed certificates:**
+```bash
+# Generate certificate
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout tls.key -out tls.crt \
+  -subj "/CN=cache-server.default.svc.cluster.local"
+
+# Create Kubernetes secret
+kubectl create secret tls gradle-cache-tls --cert=tls.crt --key=tls.key
+
+# Update values.yaml
+cacheServer:
+  tls:
+    enabled: true
+    secretName: gradle-cache-tls
+```
+
+For detailed TLS setup instructions, see the [TLS Setup Guide](docs/tls-setup.md).
 
 ### Environment Variables
 
@@ -304,19 +342,19 @@ metrics:
 
 ### Current Limitations
 
-- **No TLS/HTTPS** - Traffic is unencrypted. Suitable for trusted internal networks only.
-- **Basic Authentication** - Simple username/password authentication. Credentials transmitted in HTTP headers.
+- **TLS Optional** - TLS/HTTPS is disabled by default. Enable it for production deployments.
+- **Basic Authentication** - Simple username/password authentication.
 - **Single User** - Only one set of credentials supported.
+- **Single Replica** - No built-in high availability (single point of failure).
 
 ### Recommendations for Production
 
-1. **Change default credentials** - Use strong, randomly-generated passwords
-2. **Enable TLS** - Use cert-manager or provide your own certificates
+1. **Enable TLS** - Encrypt all traffic (see [TLS Setup Guide](docs/tls-setup.md))
+2. **Change default credentials** - Use strong, randomly-generated passwords
 3. **Network Policies** - Restrict access to authorized pods only
 4. **Use Kubernetes Secrets** - Never commit credentials to version control
-5. **Regular updates** - Keep dependencies and base images up to date
-
-For TLS configuration guidance, see [TLS Setup Guide](docs/tls-setup.md).
+5. **Monitor certificate expiration** - Set up alerts for certificate renewal
+6. **Regular updates** - Keep dependencies and base images up to date
 
 ## Troubleshooting
 
