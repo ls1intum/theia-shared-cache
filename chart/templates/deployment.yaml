@@ -130,11 +130,3 @@ spec:
             secretName: {{ .Values.cacheServer.tls.secretName }}
             defaultMode: 0400
         {{- end }}
-      {{- if .Values.cacheServer.nodeSelector }}
-      nodeSelector:
-        {{- toYaml .Values.cacheServer.nodeSelector | nindent 8 }}
-      {{- end }}
-      {{- if .Values.cacheServer.tolerations }}
-      tolerations:
-        {{- toYaml .Values.cacheServer.tolerations | nindent 8 }}
-      {{- end }}
