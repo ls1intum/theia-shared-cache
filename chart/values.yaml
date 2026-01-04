@@ -3,8 +3,7 @@ cacheServer:
   replicaCount: 1
 
   image:
-    # Update this to your actual registry path after first push
-    repository: ghcr.io/kevingruber/theia-shared-cache/gradle-cache
+    repository: ghcr.io/ls1intum/theia-shared-cache/gradle-cache
     tag: "latest"
     pullPolicy: IfNotPresent
 
