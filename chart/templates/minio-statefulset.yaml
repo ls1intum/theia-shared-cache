@@ -69,14 +69,6 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
-      {{- if .Values.minio.nodeSelector }}
-      nodeSelector:
-        {{- toYaml .Values.minio.nodeSelector | nindent 8 }}
-      {{- end }}
-      {{- if .Values.minio.tolerations }}
-      tolerations:
-        {{- toYaml .Values.minio.tolerations | nindent 8 }}
-      {{- end }}
   {{- if .Values.minio.persistence.enabled }}
   volumeClaimTemplates:
     - metadata:
