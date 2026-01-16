@@ -9,19 +9,6 @@ cacheServer:
 
   port: 8080
 
-  # TLS Configuration
-  tls:
-    enabled: false
-    # Secret name containing tls.crt and tls.key
-    secretName: ""
-    # Optional: Use cert-manager to generate certificates
-    certManager:
-      enabled: false
-      # Name of the ClusterIssuer or Issuer
-      issuerName: "letsencrypt-prod"
-      # Type of issuer: ClusterIssuer or Issuer
-      issuerKind: "ClusterIssuer"
-
   # Timeouts
   readTimeout: 30s
   writeTimeout: 120s
@@ -41,11 +28,9 @@ cacheServer:
   config:
     maxEntrySizeMB: 100
 
-  # Storage configuration (used when minio.enabled=false)
+  # Storage configuration
   storage:
-    endpoint: ""
     bucket: "gradle-cache"
-    useSSL: false
 
   # Logging
   logging:
@@ -60,12 +45,6 @@ cacheServer:
     limits:
       memory: "1Gi"
       cpu: "500m"
-
-  # Optional node selector
-  nodeSelector: {}
-
-  # Optional tolerations
-  tolerations: []
 
 # MinIO Configuration
 minio:
@@ -86,8 +65,6 @@ minio:
   persistence:
     enabled: true
     size: 50Gi
-    # Leave empty to use default storage class
-    storageClass: ""
 
   # Resource limits
   resources:
@@ -97,20 +74,3 @@ minio:
     limits:
       memory: "2Gi"
       cpu: "1000m"
-
-  # Optional node selector
-  nodeSelector: {}
-
-  # Optional tolerations
-  tolerations: []
-
-# Metrics/Monitoring
-metrics:
-  enabled: true
-  serviceMonitor:
-    # Enable if using Prometheus Operator
-    enabled: false
-
-# Use an existing secret instead of creating one
-# The secret must contain: minio-access-key, minio-secret-key, cache-password
-existingSecret: ""
