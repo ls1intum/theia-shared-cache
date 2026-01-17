@@ -1,32 +1,25 @@
-{{- if .Values.cacheServer.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Release.Name }}-cache-server
   labels:
-    app.kubernetes.io/name: {{ .Chart.Name }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/component: cache-server
-    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app: {{ .Release.Name }}
+    component: cache-server
 spec:
-  replicas: {{ .Values.cacheServer.replicaCount | default 1 }}
+  replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ .Chart.Name }}
-      app.kubernetes.io/instance: {{ .Release.Name }}
-      app.kubernetes.io/component: cache-server
+      app: {{ .Release.Name }}
+      component: cache-server
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: {{ .Chart.Name }}
-        app.kubernetes.io/instance: {{ .Release.Name }}
-        app.kubernetes.io/component: cache-server
+        app: {{ .Release.Name }}
+        component: cache-server
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
         checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
     spec:
-      {{- if .Values.minio.enabled }}
       initContainers:
         - name: wait-for-minio
           image: busybox:1.36
@@ -47,49 +40,48 @@ spec:
             - -c
             - |
               mc alias set minio http://{{ .Release.Name }}-minio:9000 $MINIO_ACCESS_KEY $MINIO_SECRET_KEY
-              mc mb --ignore-existing minio/{{ .Values.cacheServer.storage.bucket | default "gradle-cache" }}
+              mc mb --ignore-existing minio/gradle-cache
               echo "Bucket created or already exists"
           env:
             - name: MINIO_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.existingSecret | default (printf "%s-secrets" .Release.Name) }}
+                  name: {{ .Release.Name }}-secrets
                   key: minio-access-key
             - name: MINIO_SECRET_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.existingSecret | default (printf "%s-secrets" .Release.Name) }}
+                  name: {{ .Release.Name }}-secrets
                   key: minio-secret-key
-      {{- end }}
       containers:
         - name: cache-server
-          image: "{{ .Values.cacheServer.image.repository }}:{{ .Values.cacheServer.image.tag }}"
-          imagePullPolicy: {{ .Values.cacheServer.image.pullPolicy | default "IfNotPresent" }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
-              containerPort: {{ .Values.cacheServer.port }}
+              containerPort: 8080
               protocol: TCP
           env:
             - name: MINIO_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.existingSecret | default (printf "%s-secrets" .Release.Name) }}
+                  name: {{ .Release.Name }}-secrets
                   key: minio-access-key
             - name: MINIO_SECRET_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.existingSecret | default (printf "%s-secrets" .Release.Name) }}
+                  name: {{ .Release.Name }}-secrets
                   key: minio-secret-key
             - name: CACHE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.existingSecret | default (printf "%s-secrets" .Release.Name) }}
+                  name: {{ .Release.Name }}-secrets
                   key: cache-password
           args:
             - --config
             - /etc/gradle-cache/config.yaml
           resources:
-            {{- toYaml .Values.cacheServer.resources | nindent 12 }}
+            {{- toYaml .Values.resources.cacheServer | nindent 12 }}
           livenessProbe:
             httpGet:
               path: /ping
@@ -114,4 +106,3 @@ spec:
         - name: config
           configMap:
             name: {{ .Release.Name }}-config
-{{- end }}

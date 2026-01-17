@@ -1,45 +1,25 @@
-# Cache Server Configuration
-cacheServer:
-  enabled: true
-  replicaCount: 1
+# Gradle Build Cache Configuration
 
-  image:
-    repository: ghcr.io/ls1intum/theia-shared-cache/gradle-cache
-    tag: "latest"
-    pullPolicy: IfNotPresent
+# Docker image
+image:
+  repository: ghcr.io/ls1intum/theia-shared-cache/gradle-cache
+  tag: "latest"
+  pullPolicy: IfNotPresent
 
-  port: 8080
+# Authentication credentials
+auth:
+  username: "gradle"
+  # IMPORTANT: Change this password in production!
+  password: "changeme"
 
-  # Timeouts
-  readTimeout: 30s
-  writeTimeout: 120s
+# Storage configuration
+storage:
+  # Persistent volume size for cache data
+  size: 50Gi
 
-  # Service configuration
-  service:
-    type: ClusterIP
-
-  # Authentication
-  auth:
-    enabled: true
-    username: "gradle"
-    # IMPORTANT: Change this password in production!
-    password: "changeme"
-
-  # Cache configuration
-  config:
-    maxEntrySizeMB: 100
-
-  # Storage configuration
-  storage:
-    bucket: "gradle-cache"
-
-  # Logging
-  logging:
-    level: "info"
-    format: "json"
-
-  # Resource limits
-  resources:
+# Resource limits
+resources:
+  cacheServer:
     requests:
       memory: "256Mi"
       cpu: "100m"
@@ -47,28 +27,7 @@ cacheServer:
       memory: "1Gi"
       cpu: "500m"
 
-# MinIO Configuration
-minio:
-  enabled: true
-
-  image:
-    repository: minio/minio
-    tag: "latest"
-    pullPolicy: IfNotPresent
-
-  # Authentication
-  auth:
-    # IMPORTANT: Change these credentials in production!
-    accessKey: "minioadmin"
-    secretKey: "minioadmin"
-
-  # Persistence
-  persistence:
-    enabled: true
-    size: 50Gi
-
-  # Resource limits
-  resources:
+  minio:
     requests:
       memory: "512Mi"
       cpu: "250m"

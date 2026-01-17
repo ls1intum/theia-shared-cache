@@ -1,35 +1,30 @@
-{{- if .Values.cacheServer.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ .Release.Name }}-config
   labels:
-    app.kubernetes.io/name: {{ .Chart.Name }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/component: cache-server
-    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app: {{ .Release.Name }}
+    component: cache-server
 data:
   config.yaml: |
     server:
-      port: {{ .Values.cacheServer.port }}
-      read_timeout: {{ .Values.cacheServer.readTimeout | default "30s" }}
-      write_timeout: {{ .Values.cacheServer.writeTimeout | default "120s" }}
+      port: 8080
+      read_timeout: 30s
+      write_timeout: 120s
 
     storage:
       endpoint: "{{ .Release.Name }}-minio:9000"
-      bucket: {{ .Values.cacheServer.storage.bucket | default "gradle-cache" | quote }}
+      bucket: "gradle-cache"
       use_ssl: false
 
     cache:
-      max_entry_size_mb: {{ .Values.cacheServer.config.maxEntrySizeMB | default 100 }}
+      max_entry_size_mb: 100
 
     auth:
-      enabled: {{ .Values.cacheServer.auth.enabled }}
+      enabled: true
       users:
-        - username: {{ .Values.cacheServer.auth.username | quote }}
+        - username: {{ .Values.auth.username | quote }}
 
     logging:
-      level: {{ .Values.cacheServer.logging.level | default "info" | quote }}
-      format: {{ .Values.cacheServer.logging.format | default "json" | quote }}
-{{- end }}
+      level: "info"
+      format: "json"
