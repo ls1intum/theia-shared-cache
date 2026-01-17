@@ -1,3 +1,4 @@
+{{- if .Values.enabled }}
 Gradle Build Cache has been deployed!
 
 1. Get the cache server URL:
@@ -33,3 +34,7 @@ Gradle Build Cache has been deployed!
    Then open http://localhost:9001
    Username: minioadmin
    Password: minioadmin
+{{- else }}
+Gradle Build Cache is disabled (enabled: false).
+No resources have been deployed.
+{{- end }}

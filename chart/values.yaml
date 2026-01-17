@@ -1,5 +1,8 @@
 # Gradle Build Cache Configuration
 
+# Enable/disable the entire cache deployment
+enabled: true
+
 # Docker image
 image:
   repository: ghcr.io/ls1intum/theia-shared-cache/gradle-cache
@@ -16,6 +19,8 @@ auth:
 storage:
   # Persistent volume size for cache data
   size: 50Gi
+  # Storage class for persistent volume
+  storageClass: "csi-rbd-sc"
 
 # Resource limits
 resources:
