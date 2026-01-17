@@ -1,0 +1,39 @@
+Gradle Build Cache has been deployed!
+
+{{- if .Values.cacheServer.enabled }}
+
+1. Get the cache server URL:
+
+   export CACHE_URL=http://{{ .Release.Name }}-cache:{{ .Values.cacheServer.port }}
+
+2. Port-forward to access the cache locally:
+
+   kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ .Release.Name }}-cache {{ .Values.cacheServer.port }}:{{ .Values.cacheServer.port }}
+
+3. Test the cache server:
+
+   curl http://localhost:{{ .Values.cacheServer.port }}/ping
+   curl http://localhost:{{ .Values.cacheServer.port }}/health
+
+4. Configure your Gradle build (settings.gradle.kts):
+
+   buildCache {
+       remote<HttpBuildCache> {
+           url = uri("$CACHE_URL/cache/")
+           credentials {
+               username = "{{ .Values.cacheServer.auth.username }}"
+               password = "<your-password>"
+           }
+           isPush = true
+       }
+   }
+{{- end }}
+
+{{- if .Values.minio.enabled }}
+
+5. MinIO console (for debugging):
+
+   kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ .Release.Name }}-minio 9001:9001
+
+   Then open http://localhost:9001 (credentials from your values)
+{{- end }}
