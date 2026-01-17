@@ -73,11 +73,13 @@ spec:
                 secretKeyRef:
                   name: {{ .Release.Name }}-secrets
                   key: minio-secret-key
+            {{- if .Values.auth.enabled }}
             - name: CACHE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ .Release.Name }}-secrets
                   key: cache-password
+            {{- end }}
           args:
             - --config
             - /etc/gradle-cache/config.yaml

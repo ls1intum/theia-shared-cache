@@ -6,11 +6,12 @@ enabled: true
 # Docker image
 image:
   repository: ghcr.io/ls1intum/theia-shared-cache/gradle-cache
-  tag: "latest"
+  tag: "main"
   pullPolicy: IfNotPresent
 
 # Authentication credentials
 auth:
+  enabled: true
   username: "gradle"
   # IMPORTANT: Change this password in production!
   password: "changeme"

@@ -22,9 +22,11 @@ data:
       max_entry_size_mb: 100
 
     auth:
-      enabled: true
+      enabled: {{ .Values.auth.enabled }}
+      {{- if .Values.auth.enabled }}
       users:
         - username: {{ .Values.auth.username | quote }}
+      {{- end }}
 
     logging:
       level: "info"

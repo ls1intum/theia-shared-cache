@@ -19,10 +19,12 @@ Gradle Build Cache has been deployed!
    buildCache {
        remote<HttpBuildCache> {
            url = uri("$CACHE_URL/cache/")
+           {{- if .Values.auth.enabled }}
            credentials {
                username = "{{ .Values.auth.username }}"
                password = "<your-password>"
            }
+           {{- end }}
            isPush = true
        }
    }
