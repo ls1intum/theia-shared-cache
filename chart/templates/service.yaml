@@ -1,27 +1,19 @@
+{{- if .Values.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ .Release.Name }}-cache
   labels:
-    app.kubernetes.io/name: {{ .Chart.Name }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/component: cache-server
-    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
-  {{- if .Values.metrics.enabled }}
-  annotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/port: "{{ .Values.cacheServer.port }}"
-    prometheus.io/path: "/metrics"
-  {{- end }}
+    app: {{ .Release.Name }}
+    component: cache-server
 spec:
-  type: {{ .Values.cacheServer.service.type | default "ClusterIP" }}
+  type: ClusterIP
   ports:
     - name: http
-      port: {{ .Values.cacheServer.port }}
+      port: 8080
       targetPort: http
       protocol: TCP
   selector:
-    app.kubernetes.io/name: {{ .Chart.Name }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/component: cache-server
+    app: {{ .Release.Name }}
+    component: cache-server
+{{- end }}

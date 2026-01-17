@@ -1,17 +1,18 @@
+{{- if .Values.enabled }}
 Gradle Build Cache has been deployed!
 
 1. Get the cache server URL:
 
-   export CACHE_URL=http://{{ .Release.Name }}-cache:{{ .Values.cacheServer.port }}
+   export CACHE_URL=http://{{ .Release.Name }}-cache:8080
 
 2. Port-forward to access the cache locally:
 
-   kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ .Release.Name }}-cache {{ .Values.cacheServer.port }}:{{ .Values.cacheServer.port }}
+   kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ .Release.Name }}-cache 8080:8080
 
 3. Test the cache server:
 
-   curl http://localhost:{{ .Values.cacheServer.port }}/ping
-   curl http://localhost:{{ .Values.cacheServer.port }}/health
+   curl http://localhost:8080/ping
+   curl http://localhost:8080/health
 
 4. Configure your Gradle build (settings.gradle.kts):
 
@@ -19,25 +20,21 @@ Gradle Build Cache has been deployed!
        remote<HttpBuildCache> {
            url = uri("$CACHE_URL/cache/")
            credentials {
-               username = "{{ .Values.cacheServer.auth.username }}"
+               username = "{{ .Values.auth.username }}"
                password = "<your-password>"
            }
            isPush = true
        }
    }
 
-{{- if .Values.metrics.enabled }}
-
-5. Prometheus metrics are available at:
-
-   http://{{ .Release.Name }}-cache:{{ .Values.cacheServer.port }}/metrics
-{{- end }}
-
-{{- if .Values.minio.enabled }}
-
-6. MinIO console (for debugging):
+5. MinIO console (for debugging):
 
    kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ .Release.Name }}-minio 9001:9001
 
-   Then open http://localhost:9001 (credentials from your values)
+   Then open http://localhost:9001
+   Username: minioadmin
+   Password: minioadmin
+{{- else }}
+Gradle Build Cache is disabled (enabled: false).
+No resources have been deployed.
 {{- end }}
