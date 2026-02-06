@@ -15,6 +15,7 @@ type Config struct {
 	Auth    AuthConfig    `mapstructure:"auth"`
 	Metrics MetricsConfig `mapstructure:"metrics"`
 	Logging LoggingConfig `mapstructure:"logging"`
+	Sentry  SentryConfig  `mapstructure:"sentry"`
 }
 
 type ServerConfig struct {
@@ -61,6 +62,11 @@ type LoggingConfig struct {
 	Format string `mapstructure:"format"`
 }
 
+type SentryConfig struct {
+	Dsn     string `mapstructure:"dsn"`
+	Enabled bool   `mapstructure:"enabled"`
+}
+
 func Load(configPath string) (*Config, error) {
 	v := viper.New()
 
@@ -82,6 +88,8 @@ func Load(configPath string) (*Config, error) {
 
 	v.SetDefault("metrics.enabled", true)
 
+	v.SetDefault("sentry.enabled", false)
+
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("logging.format", "json")
 
@@ -101,6 +109,7 @@ func Load(configPath string) (*Config, error) {
 	v.BindEnv("storage.access_key", "MINIO_ACCESS_KEY")
 	v.BindEnv("storage.secret_key", "MINIO_SECRET_KEY")
 	v.BindEnv("auth.users.0.password", "CACHE_PASSWORD")
+	v.BindEnv("sentry.dsn", "SENTRY_DSN")
 
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {

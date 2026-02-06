@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/kevingruber/gradle-cache/internal/telemetry"
 	"os"
 	"os/signal"
 	"syscall"
@@ -31,6 +32,12 @@ func main() {
 	if err := cfg.Validate(); err != nil {
 		logger.Fatal().Err(err).Msg("invalid configuration")
 	}
+
+	cleanup, err := telemetry.SetupTelemetry(cfg.Sentry.Enabled, cfg.Sentry.Dsn)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("failed to setup telemetry")
+	}
+	defer cleanup()
 
 	// Create storage
 	store, err := storage.NewMinIOStorage(storage.MinIOConfig{

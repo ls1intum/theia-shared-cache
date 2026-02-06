@@ -41,7 +41,11 @@ func New(cfg *config.Config, store storage.Storage, logger zerolog.Logger) *Serv
 
 	// Initialize metrics if enabled
 	if cfg.Metrics.Enabled {
-		s.metrics = middleware.NewMetrics("gradle_cache")
+		metrics, err := middleware.NewMetrics()
+		if err != nil {
+			logger.Fatal().Err(err).Msg("Failed to initialize metrics")
+		}
+		s.metrics = metrics
 	}
 
 	s.setupRoutes()
@@ -71,11 +75,15 @@ func (s *Server) setupRoutes() {
 	}
 
 	// Cache endpoints
-	cacheHandler := handler.NewCacheHandler(
+	cacheHandler, err := handler.NewCacheHandler(
 		s.storage,
 		s.cfg.MaxEntrySizeBytes(),
 		s.logger,
 	)
+
+	if err != nil {
+		s.logger.Fatal().Err(err).Msg("Failed to initialize cache")
+	}
 
 	// Create cache group with optional auth
 	cacheGroup := s.router.Group("/cache")
