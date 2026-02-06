@@ -3,6 +3,17 @@ entries:
   theia-shared-cache:
   - apiVersion: v2
     appVersion: 0.1.0
+    created: "2026-02-06T16:54:38.768522628Z"
+    description: A Gradle Build Cache server with MinIO backend for Theia IDE deployments
+      in Kubernetes
+    digest: 5626ebb8315d156953d6c4607322abd85a9b049c7f617eccf0522827e529759e
+    name: theia-shared-cache
+    type: application
+    urls:
+    - https://github.com/ls1intum/theia-shared-cache/releases/download/theia-shared-cache-0.2.1/theia-shared-cache-0.2.1.tgz
+    version: 0.2.1
+  - apiVersion: v2
+    appVersion: 0.1.0
     created: "2025-12-19T10:09:15.067492681Z"
     description: A custom Gradle Build Cache server with MinIO backend for Theia IDE
       deployments in Kubernetes
@@ -81,4 +92,4 @@ entries:
     urls:
     - https://github.com/ls1intum/theia-shared-cache/releases/download/theia-shared-cache-0.1.0/theia-shared-cache-0.1.0.tgz
     version: 0.1.0
-generated: "2025-12-19T10:09:15.06753514Z"
+generated: "2026-02-06T16:54:38.768548725Z"
