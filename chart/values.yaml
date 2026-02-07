@@ -40,3 +40,9 @@ resources:
     limits:
       memory: "2Gi"
       cpu: "1000m"
+
+tls:
+  # Enable TLS for the cache server
+  enabled: false
+  # TLS secret name (if TLS is enabled)
+  secretName: ""

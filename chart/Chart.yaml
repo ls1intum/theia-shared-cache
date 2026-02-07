@@ -5,7 +5,7 @@ description: A Gradle Build Cache server with MinIO backend for Theia IDE deploy
 type: application
 
 # Chart version - bump for breaking changes
-version: 0.2.1
+version: 0.2.2
 
 # Application version - matches the cache server version
 appVersion: "0.1.0"
