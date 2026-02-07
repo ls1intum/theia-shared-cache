@@ -89,6 +89,9 @@ spec:
             httpGet:
               path: /ping
               port: http
+              {{- if .Values.tls.enabled }}
+              scheme: HTTPS
+              {{- end }}
             initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 5
@@ -97,6 +100,9 @@ spec:
             httpGet:
               path: /health
               port: http
+              {{- if .Values.tls.enabled }}
+              scheme: HTTPS
+              {{- end }}
             initialDelaySeconds: 5
             periodSeconds: 5
             timeoutSeconds: 3
