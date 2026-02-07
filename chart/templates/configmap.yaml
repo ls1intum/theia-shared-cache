@@ -15,7 +15,7 @@ data:
       {{- if .Values.tls.enabled }}
       tls:
         enabled: true 
-        cert_file: /tls/tls.crt
+        cert_file: /etc/certs/tls.crt
         key_file: /tls/tls.key
       {{- end}}
 
