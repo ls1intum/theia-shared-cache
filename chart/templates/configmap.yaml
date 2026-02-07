@@ -12,6 +12,12 @@ data:
       port: 8080
       read_timeout: 30s
       write_timeout: 120s
+      {{- if .Values.tls.enabled }}
+      tls:
+        enabled: true 
+        cert_file: /tls/tls.crt
+        key_file: /tls/tls.key
+      {{- end}}
 
     storage:
       endpoint: "{{ .Release.Name }}-minio:9000"

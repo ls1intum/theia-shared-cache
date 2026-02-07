@@ -105,8 +105,18 @@ spec:
             - name: config
               mountPath: /etc/gradle-cache
               readOnly: true
+            {{- if .Values.tls.enabled }}
+            - name: tls-certs
+              mountPath: /etc/certs
+              readOnly: true
+            {{- end }}
       volumes:
         - name: config
           configMap:
             name: {{ .Release.Name }}-config
+        {{- if .Values.tls.enabled }}
+        - name: tls-certs
+          secret:
+            secretName: {{ .Values.tls.secretName }}
+        {{- end }}
 {{- end }}
