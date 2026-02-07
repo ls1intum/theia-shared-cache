@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kevingruber/gradle-cache/internal/config"
@@ -159,7 +160,15 @@ func (s *Server) Run(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
 		s.logger.Info().Msg("shutting down server")
-		return srv.Shutdown(context.Background())
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			return fmt.Errorf("server shutdown failed %w", err)
+
+		}
+		return nil
 	case err := <-errCh:
 		return err
 	}
