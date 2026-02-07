@@ -16,7 +16,7 @@ data:
       tls:
         enabled: true 
         cert_file: /etc/certs/tls.crt
-        key_file: /tls/tls.key
+        key_file: /etc/certs/tls.key
       {{- end}}
 
     storage:
