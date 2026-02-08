@@ -1,0 +1,51 @@
+name: Chart Preview
+
+on:
+  pull_request:
+    paths:
+      - 'chart/**'
+      - '.github/workflows/chart-preview.yml'
+
+jobs:
+  preview:
+    permissions:
+      contents: read
+      packages: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Update chart dependencies
+        run: helm dependency update ./chart
+
+      - name: Set preview version
+        run: |
+          CURRENT_VERSION=$(grep '^version:' chart/Chart.yaml | awk '{print $2}')
+          PREVIEW_VERSION="${CURRENT_VERSION}-pr.${{ github.event.pull_request.number }}"
+          sed -i "s/^version: .*/version: ${PREVIEW_VERSION}/" chart/Chart.yaml
+          echo "PREVIEW_VERSION=${PREVIEW_VERSION}" >> $GITHUB_ENV
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Package and push
+        run: |
+          helm package ./chart
+          helm push theia-shared-cache-${PREVIEW_VERSION}.tgz oci://ghcr.io/${{ github.repository_owner }}/charts
+
+      - name: Comment install instructions
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: chart-preview
+          message: |
+            ## 📦 Chart Preview Ready
+
+            ```bash
+            helm install test oci://ghcr.io/${{ github.repository_owner }}/charts/theia-shared-cache --version ${{ env.PREVIEW_VERSION }}
+            ```
+
+            _Updated: ${{ github.sha }}_
