@@ -5,7 +5,13 @@ description: A Gradle Build Cache server with MinIO backend for Theia IDE deploy
 type: application
 
 # Chart version - bump for breaking changes
-version: 0.2.2
+version: 0.2.3
 
 # Application version - matches the cache server version
 appVersion: "0.1.0"
+
+dependencies:
+  - name: reposilite
+    version: "1.3.25"
+    repository: "https://helm.reposilite.com/"
+    condition: reposilite.enabled

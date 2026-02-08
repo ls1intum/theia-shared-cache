@@ -40,3 +40,27 @@ Gradle Build Cache has been deployed!
 Gradle Build Cache is disabled (enabled: false).
 No resources have been deployed.
 {{- end }}
+
+{{- if .Values.reposilite.enabled }}
+
+6. Reposilite (Maven/Gradle Dependency Proxy):
+
+   Internal URL: http://{{ .Release.Name }}-reposilite:8080
+
+   Port-forward to access the Reposilite dashboard:
+
+   kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ .Release.Name }}-reposilite 8081:8080
+
+   Then open http://localhost:8081
+   Token: admin:changeme
+
+   Maven repository URL (for Gradle):
+   http://{{ .Release.Name }}-reposilite:8080/releases
+
+7. Theia Pod Configuration:
+
+   Set these environment variables in your Theia pods:
+
+   GRADLE_CACHE_URL=http://{{ .Release.Name }}-cache:8080/cache/
+   GRADLE_REPO_URL=http://{{ .Release.Name }}-reposilite:8080/releases
+{{- end }}
