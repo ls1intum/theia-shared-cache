@@ -10,8 +10,9 @@ data:
   configuration.shared.json: |
     {
       "maven": {
-        "repositories": {
-          "releases": {
+        "repositories": [
+          {
+            "id": "releases",
             "visibility": "PUBLIC",
             "redeployment": false,
             "preserved": true,
@@ -35,7 +36,7 @@ data:
               }
             ]
           }
-        }
+        ]
       }
     }
 {{- end }}
