@@ -71,9 +71,9 @@ reposilite:
     - name: JAVA_OPTS
       value: "-Xmx128M"
     - name: REPOSILITE_OPTS
-      value: "--token admin:changeme --shared-configuration=/app/data/configuration.shared.json"
+      value: "--token admin:changeme --shared-configuration=/etc/reposilite/configuration.shared.json"
 
-  # Mount shared configuration into Reposilite pod
+  # Mount shared configuration into Reposilite pod (outside /app/data to avoid PVC conflict)
   deployment:
     additionalVolumes:
       - name: shared-config
@@ -81,5 +81,6 @@ reposilite:
           name: reposilite-shared-config
     additionalVolumeMounts:
       - name: shared-config
-        mountPath: /app/data/configuration.shared.json
+        mountPath: /etc/reposilite/configuration.shared.json
         subPath: configuration.shared.json
+        readOnly: true
