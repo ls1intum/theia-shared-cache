@@ -1,0 +1,41 @@
+{{- if .Values.reposilite.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reposilite-shared-config
+  labels:
+    app: {{ .Release.Name }}
+    component: reposilite
+data:
+  configuration.shared.json: |
+    {
+      "maven": {
+        "repositories": {
+          "releases": {
+            "visibility": "PUBLIC",
+            "redeployment": false,
+            "preserved": true,
+            "storageProvider": {
+              "type": "fs",
+              "quota": "100%",
+              "mount": ""
+            },
+            "proxied": [
+              {
+                "link": "https://repo1.maven.org/maven2",
+                "store": true,
+                "allowedGroups": [],
+                "allowedExtensions": [".jar", ".war", ".xml", ".pom", ".module", ".asc", ".md5", ".sha1", ".sha256", ".sha512"]
+              },
+              {
+                "link": "https://plugins.gradle.org/m2",
+                "store": true,
+                "allowedGroups": [],
+                "allowedExtensions": [".jar", ".war", ".xml", ".pom", ".module", ".asc", ".md5", ".sha1", ".sha256", ".sha512"]
+              }
+            ]
+          }
+        }
+      }
+    }
+{{- end }}

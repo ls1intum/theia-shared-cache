@@ -46,3 +46,40 @@ tls:
   enabled: false
   # TLS secret name (if TLS is enabled)
   secretName: ""
+
+# Reposilite - Maven/Gradle dependency proxy
+reposilite:
+  enabled: true
+
+  # Persistence for cached artifacts (stored on Ceph)
+  persistence:
+    enabled: true
+    size: 20Gi
+    storageClass: "csi-rbd-sc"
+
+  # Resource limits (Reposilite is lightweight - ~20-30MB RAM)
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "500m"
+
+  # JVM and Reposilite startup settings
+  env:
+    - name: JAVA_OPTS
+      value: "-Xmx128M"
+    - name: REPOSILITE_OPTS
+      value: "--token admin:changeme --shared-configuration=/app/data/configuration.shared.json"
+
+  # Mount shared configuration into Reposilite pod
+  deployment:
+    additionalVolumes:
+      - name: shared-config
+        configMap:
+          name: reposilite-shared-config
+    additionalVolumeMounts:
+      - name: shared-config
+        mountPath: /app/data/configuration.shared.json
+        subPath: configuration.shared.json
