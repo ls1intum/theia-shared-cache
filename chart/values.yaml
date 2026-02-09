@@ -72,10 +72,6 @@ reposilite:
       value: "-Xmx128M"
     - name: REPOSILITE_OPTS
       value: "--token admin:changeme --shared-configuration=/etc/reposilite/configuration.shared.json"
-    - name: REPOSILITE_PROMETHEUS_USER
-      value: "admin"
-    - name: REPOSILITE_PROMETHEUS_PASSWORD
-      value: "changeme"
 
     # Mount shared configuration + plugins into Reposilite pod
   deployment:
