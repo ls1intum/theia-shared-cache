@@ -72,15 +72,35 @@ reposilite:
       value: "-Xmx128M"
     - name: REPOSILITE_OPTS
       value: "--token admin:changeme --shared-configuration=/etc/reposilite/configuration.shared.json"
+    - name: REPOSILITE_PROMETHEUS_USER
+      value: "admin"
+    - name: REPOSILITE_PROMETHEUS_PASSWORD
+      value: "changeme"
 
-  # Mount shared configuration into Reposilite pod (outside /app/data to avoid PVC conflict)
+    # Mount shared configuration + plugins into Reposilite pod
   deployment:
+    initContainers:
+      - name: download-prometheus-plugin
+        image: busybox:1.36
+        command:
+          - sh
+          - -c
+          - |
+            wget -O /plugins/prometheus-plugin.jar \
+              "https://maven.reposilite.com/releases/com/reposilite/plugin/prometheus-plugin/3.5.26/prometheus-plugin-3.5.26-all.jar"
+        volumeMounts:
+          - name: plugins
+            mountPath: /plugins
     additionalVolumes:
       - name: shared-config
         configMap:
           name: reposilite-shared-config
+      - name: plugins
+        emptyDir: {}
     additionalVolumeMounts:
       - name: shared-config
         mountPath: /etc/reposilite/configuration.shared.json
         subPath: configuration.shared.json
         readOnly: true
+      - name: plugins
+        mountPath: /app/data/plugins
