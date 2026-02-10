@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -51,6 +52,7 @@ type AuthConfig struct {
 type UserAuth struct {
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
+	Role     string `mapstructure:"role"`
 }
 
 type MetricsConfig struct {
@@ -108,7 +110,6 @@ func Load(configPath string) (*Config, error) {
 	// Bind specific environment variables
 	v.BindEnv("storage.access_key", "MINIO_ACCESS_KEY")
 	v.BindEnv("storage.secret_key", "MINIO_SECRET_KEY")
-	v.BindEnv("auth.users.0.password", "CACHE_PASSWORD")
 	v.BindEnv("sentry.dsn", "SENTRY_DSN")
 
 	var cfg Config
@@ -116,14 +117,25 @@ func Load(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
-	// Handle CACHE_PASSWORD environment variable for default user
-	if cachePassword := v.GetString("CACHE_PASSWORD"); cachePassword != "" {
-		if len(cfg.Auth.Users) > 0 {
-			cfg.Auth.Users[0].Password = cachePassword
-		}
-	}
+	// Override user credentials from environment variables if set
+	overrideUserFromEnv(&cfg, 0, "CACHE_READER_USERNAME", "CACHE_READER_PASSWORD")
+	overrideUserFromEnv(&cfg, 1, "CACHE_WRITER_USERNAME", "CACHE_WRITER_PASSWORD")
 
 	return &cfg, nil
+}
+
+// overrideUserFromEnv overrides username and password for a specific user index
+// from environment variables, if they are set.
+func overrideUserFromEnv(cfg *Config, index int, usernameEnv, passwordEnv string) {
+	if index >= len(cfg.Auth.Users) {
+		return
+	}
+	if val := os.Getenv(usernameEnv); val != "" {
+		cfg.Auth.Users[index].Username = val
+	}
+	if val := os.Getenv(passwordEnv); val != "" {
+		cfg.Auth.Users[index].Password = val
+	}
 }
 
 func (c *Config) Validate() error {

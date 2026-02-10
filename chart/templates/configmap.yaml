@@ -14,7 +14,7 @@ data:
       write_timeout: 120s
       {{- if .Values.tls.enabled }}
       tls:
-        enabled: true 
+        enabled: true
         cert_file: /etc/certs/tls.crt
         key_file: /etc/certs/tls.key
       {{- end}}
@@ -31,7 +31,10 @@ data:
       enabled: {{ .Values.auth.enabled }}
       {{- if .Values.auth.enabled }}
       users:
-        - username: {{ .Values.auth.username | quote }}
+        - username: {{ .Values.auth.reader.username | quote }}
+          role: "reader"
+        - username: {{ .Values.auth.writer.username | quote }}
+          role: "writer"
       {{- end }}
 
     logging:

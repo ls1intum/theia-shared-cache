@@ -9,12 +9,21 @@ image:
   tag: "main"
   pullPolicy: IfNotPresent
 
-# Authentication credentials
+# Authentication credentials (role-based)
+# reader: read-only access (for Theia IDE / students)
+# writer: read-write access (for CI/CD, admin, cache pre-warming)
 auth:
   enabled: true
-  username: "gradle"
-  # IMPORTANT: Change this password in production!
-  password: "changeme"
+  reader:
+    username: "reader"
+    # IMPORTANT: Change this password in production!
+    # optimaly from github envrionment secrets
+    password: "changeme-reader"
+  writer:
+    username: "writer"
+    # IMPORTANT: Change this password in production!
+    # optimaly from github envrionment secrets
+    password: "changeme-writer"
 
 # Storage configuration
 storage:

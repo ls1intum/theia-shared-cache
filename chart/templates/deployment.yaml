@@ -47,12 +47,12 @@ spec:
             - name: MINIO_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-secrets
+                  name: {{ .Release.Name }}-minio-secrets
                   key: minio-access-key
             - name: MINIO_SECRET_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-secrets
+                  name: {{ .Release.Name }}-minio-secrets
                   key: minio-secret-key
       containers:
         - name: cache-server
@@ -66,19 +66,34 @@ spec:
             - name: MINIO_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-secrets
+                  name: {{ .Release.Name }}-minio-secrets
                   key: minio-access-key
             - name: MINIO_SECRET_KEY
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-secrets
+                  name: {{ .Release.Name }}-minio-secrets
                   key: minio-secret-key
             {{- if .Values.auth.enabled }}
-            - name: CACHE_PASSWORD
+            - name: CACHE_READER_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-secrets
-                  key: cache-password
+                  name: {{ .Release.Name }}-cache-reader
+                  key: username
+            - name: CACHE_READER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-cache-reader
+                  key: password
+            - name: CACHE_WRITER_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-cache-writer
+                  key: username
+            - name: CACHE_WRITER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-cache-writer
+                  key: password
             {{- end }}
           args:
             - --config
