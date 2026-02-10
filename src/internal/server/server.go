@@ -92,9 +92,16 @@ func (s *Server) setupRoutes() {
 		cacheGroup.Use(middleware.BasicAuth(s.cfg.Auth.Users))
 	}
 
+	// GET and HEAD are accessible to all authenticated users (reader + writer)
 	cacheGroup.GET("/:key", cacheHandler.Get)
-	cacheGroup.PUT("/:key", cacheHandler.Put)
 	cacheGroup.HEAD("/:key", cacheHandler.Head)
+
+	// PUT requires the "writer" role
+	writeGroup := cacheGroup.Group("")
+	if s.cfg.Auth.Enabled {
+		writeGroup.Use(middleware.RequireRole("writer"))
+	}
+	writeGroup.PUT("/:key", cacheHandler.Put)
 }
 
 // handlePing is a simple health check endpoint.
