@@ -32,11 +32,9 @@ type TLSConfig struct {
 }
 
 type StorageConfig struct {
-	Endpoint  string `mapstructure:"endpoint"`
-	AccessKey string `mapstructure:"access_key"`
-	SecretKey string `mapstructure:"secret_key"`
-	Bucket    string `mapstructure:"bucket"`
-	UseSSL    bool   `mapstructure:"use_ssl"`
+	Addr     string `mapstructure:"addr"`
+	Password string `mapstructure:"password"`
+	DB       int    `mapstructure:"db"`
 }
 
 type CacheConfig struct {
@@ -78,9 +76,9 @@ func Load(configPath string) (*Config, error) {
 	v.SetDefault("server.tls.cert_file", "/etc/certs/tls.crt")
 	v.SetDefault("server.tls.key_file", "/etc/certs/tls.key")
 
-	v.SetDefault("storage.endpoint", "localhost:9000")
-	v.SetDefault("storage.bucket", "gradle-cache")
-	v.SetDefault("storage.use_ssl", false)
+	v.SetDefault("storage.addr", "localhost:6379")
+	v.SetDefault("storage.password", "")
+	v.SetDefault("storage.db", 0)
 
 	v.SetDefault("cache.max_entry_size_mb", 100)
 
@@ -106,8 +104,8 @@ func Load(configPath string) (*Config, error) {
 	v.AutomaticEnv()
 
 	// Bind specific environment variables
-	v.BindEnv("storage.access_key", "MINIO_ACCESS_KEY")
-	v.BindEnv("storage.secret_key", "MINIO_SECRET_KEY")
+	v.BindEnv("storage.password", "REDIS_PASSWORD")
+
 	v.BindEnv("auth.users.0.password", "CACHE_PASSWORD")
 	v.BindEnv("sentry.dsn", "SENTRY_DSN")
 
@@ -127,17 +125,8 @@ func Load(configPath string) (*Config, error) {
 }
 
 func (c *Config) Validate() error {
-	if c.Storage.Endpoint == "" {
-		return fmt.Errorf("storage.endpoint is required")
-	}
-	if c.Storage.AccessKey == "" {
-		return fmt.Errorf("storage.access_key is required")
-	}
-	if c.Storage.SecretKey == "" {
-		return fmt.Errorf("storage.secret_key is required")
-	}
-	if c.Storage.Bucket == "" {
-		return fmt.Errorf("storage.bucket is required")
+	if c.Storage.Addr == "" {
+		return fmt.Errorf("storage.addr is required")
 	}
 	if c.Auth.Enabled && len(c.Auth.Users) == 0 {
 		return fmt.Errorf("auth.users is required when auth is enabled")
