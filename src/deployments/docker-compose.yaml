@@ -6,30 +6,28 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin
+      - REDIS_PASSWORD=changeme
       - CACHE_PASSWORD=changeme
     volumes:
       - ../configs/config.yaml:/app/config.yaml:ro
     command: ["-config", "/app/config.yaml"]
     depends_on:
-      minio:
+      redis:
         condition: service_healthy
     restart: unless-stopped
 
-  minio:
-    image: minio/minio:latest
-    command: server /data --console-address ":9001"
+  redis:
+    image: redis:7-alpine
+    command: >
+      redis-server
+      --requirepass "changeme"
+      -loglevel warning
     ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
+      - "6379:6379"
     volumes:
-      - minio-data:/data
+      - redis-data:/data
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: ["CMD", "redis-cli", "-a", "changeme", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -43,10 +41,10 @@ services:
       - ./prometheus.yaml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
     restart: unless-stopped
 
 volumes:
-  minio-data:
+  redis-data:
   prometheus-data:
