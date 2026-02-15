@@ -33,31 +33,7 @@ spec:
                 echo "Redis not ready, waiting..."
                 sleep 2
               done
-<<<<<<< HEAD
-              echo "MinIO is ready!"
-        - name: create-bucket
-          image: minio/mc:latest
-          command:
-            - sh
-            - -c
-            - |
-              mc alias set minio http://{{ .Release.Name }}-minio:9000 $MINIO_ACCESS_KEY $MINIO_SECRET_KEY
-              mc mb --ignore-existing minio/gradle-cache
-              echo "Bucket created or already exists"
-          env:
-            - name: MINIO_ACCESS_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Release.Name }}-minio-secrets
-                  key: minio-access-key
-            - name: MINIO_SECRET_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Release.Name }}-minio-secrets
-                  key: minio-secret-key
-=======
               echo "Redis is ready!"
->>>>>>> main
       containers:
         - name: cache-server
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -70,44 +46,19 @@ spec:
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
-<<<<<<< HEAD
-                  name: {{ .Release.Name }}-minio-secrets
-                  key: minio-access-key
-            - name: MINIO_SECRET_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Release.Name }}-minio-secrets
-                  key: minio-secret-key
-=======
                   name: {{ .Release.Name }}-redis-secret
                   key: redis-password
->>>>>>> main
             {{- if .Values.auth.enabled }}
-            - name: CACHE_READER_USERNAME
-              valueFrom:
-                secretKeyRef:
-<<<<<<< HEAD
-                  name: {{ .Release.Name }}-cache-reader
-                  key: username
             - name: CACHE_READER_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ .Release.Name }}-cache-reader
                   key: password
-            - name: CACHE_WRITER_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Release.Name }}-cache-writer
-                  key: username
             - name: CACHE_WRITER_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ .Release.Name }}-cache-writer
                   key: password
-=======
-                  name: {{ .Release.Name }}-redis-secret
-                  key: cache-password
->>>>>>> main
             {{- end }}
           args:
             - --config

@@ -88,20 +88,19 @@ func (s *Server) setupRoutes() {
 
 	// Create cache group with optional auth
 	cacheGroup := s.router.Group("/cache")
-	if s.cfg.Auth.Enabled {
-		cacheGroup.Use(middleware.BasicAuth(s.cfg.Auth.Users))
-	}
 
-	// GET and HEAD are accessible to all authenticated users (reader + writer)
-	cacheGroup.GET("/:key", cacheHandler.Get)
-	cacheGroup.HEAD("/:key", cacheHandler.Head)
+	cacheGroup.GET("/:key", s.cacheAuth(false), cacheHandler.Get)
+	cacheGroup.HEAD("/:key", s.cacheAuth(false), cacheHandler.Head)
+	cacheGroup.PUT("/:key", s.cacheAuth(true), cacheHandler.Put)
+}
 
-	// PUT requires the "writer" role
-	writeGroup := cacheGroup.Group("")
-	if s.cfg.Auth.Enabled {
-		writeGroup.Use(middleware.RequireRole("writer"))
+func (s *Server) cacheAuth(requireWriter bool) gin.HandlerFunc {
+	if !s.cfg.Auth.Enabled {
+		return func(c *gin.Context) {
+			c.Next()
+		}
 	}
-	writeGroup.PUT("/:key", cacheHandler.Put)
+	return middleware.CacheAuth(s.cfg.Auth, requireWriter)
 }
 
 // handlePing is a simple health check endpoint.

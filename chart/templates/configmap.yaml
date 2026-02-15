@@ -28,11 +28,10 @@ data:
     auth:
       enabled: {{ .Values.auth.enabled }}
       {{- if .Values.auth.enabled }}
-      users:
-        - username: {{ .Values.auth.reader.username | quote }}
-          role: "reader"
-        - username: {{ .Values.auth.writer.username | quote }}
-          role: "writer"
+      reader:
+        username: {{ .Values.auth.reader.username | quote }}
+      writer:
+        username: {{ .Values.auth.writer.username | quote }}
       {{- end }}
 
     logging:
