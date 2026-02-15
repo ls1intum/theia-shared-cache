@@ -1,6 +1,6 @@
 apiVersion: v2
 name: theia-shared-cache
-description: A Gradle Build Cache server with MinIO backend for Theia IDE deployments in Kubernetes
+description: A Gradle Build Cache server with Redis backend for Theia IDE deployments in Kubernetes
 
 type: application
 
