@@ -297,8 +297,8 @@ The cache server exposes metrics at `/metrics`:
 | Metric | Type | Description |
 |--------|------|-------------|
 | `gradle_cache_requests_total` | Counter | Total requests by method and status |
-| `gradle_cache_cache_hits_total` | Counter | Cache hit count |
-| `gradle_cache_cache_misses_total` | Counter | Cache miss count |
+| `gradle_cache_cache_hits` | Counter | Cache hit count |
+| `gradle_cache_cache_misses` | Counter | Cache miss count |
 | `gradle_cache_request_duration_seconds` | Histogram | Request latency (p50/p95/p99) |
 | `gradle_cache_entry_size` | Histogram | Cache entry sizes |
 
