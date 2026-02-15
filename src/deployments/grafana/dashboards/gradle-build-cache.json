@@ -55,7 +55,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-          "expr": "rate(gradle_cache_cache_hits_total[5m]) / (rate(gradle_cache_cache_hits_total[5m]) + rate(gradle_cache_cache_misses_total[5m]))",
+          "expr": "rate(gradle_cache_cache_hits[5m]) / (rate(gradle_cache_cache_hits[5m]) + rate(gradle_cache_cache_misses[5m]))",
           "legendFormat": "Hit Rate",
           "refId": "A"
         }
