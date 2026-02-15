@@ -8,8 +8,7 @@ import (
 	"github.com/kevingruber/gradle-cache/internal/config"
 )
 
-// BasicAuth creates a middleware that validates HTTP Basic Authentication
-// and stores the user's role in the gin context.
+// CacheAuth creates a middleware that validates HTTP Basic Authentication
 func CacheAuth(auth config.AuthConfig, requireWriter bool) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
