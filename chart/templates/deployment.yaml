@@ -52,7 +52,7 @@ spec:
             - name: CACHE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-redis-secrets
+                  name: {{ .Release.Name }}-redis-secret
                   key: cache-password
             {{- end }}
           args:
