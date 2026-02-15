@@ -1,0 +1,84 @@
+{{- if .Values.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-redis
+  labels:
+    {{- include "theia-shared-cache.labels" . | nindent 4 }}
+    app.kubernetes.io/component: storage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "theia-shared-cache.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: storage
+  template:
+    metadata:
+      labels:
+        {{- include "theia-shared-cache.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: storage
+    spec:
+      containers:
+        - name: redis
+          image: "redis:7-alpine"
+          imagePullPolicy: IfNotPresent
+          command:
+            - redis-server
+            - --requirepass
+            - $(REDIS_PASSWORD)
+            - --save
+            - ""
+            - --loglevel
+            - warning
+          ports:
+            - name: redis
+              containerPort: 6379
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-redis-secret
+                  key: redis-password
+          resources:
+            {{- toYaml .Values.resources.redis | nindent 12 }}
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - redis-cli -a $REDIS_PASSWORD ping | grep -q PONG
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - redis-cli -a $REDIS_PASSWORD ping | grep -q PONG
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+        - name: redis-exporter
+          image: "oliver006/redis_exporter:v1.40.0"
+          ports:
+            - name: metrics
+              containerPort: 9121
+          env:
+            - name: REDIS_ADDR
+              value: "localhost:6379"
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-redis-secret
+                  key: redis-password
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+{{- end }}

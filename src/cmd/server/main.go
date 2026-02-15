@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/kevingruber/gradle-cache/internal/telemetry"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/kevingruber/gradle-cache/internal/telemetry"
 
 	"github.com/kevingruber/gradle-cache/internal/config"
 	"github.com/kevingruber/gradle-cache/internal/server"
@@ -39,28 +40,19 @@ func main() {
 	}
 	defer cleanup()
 
-	// Create storage
-	store, err := storage.NewMinIOStorage(storage.MinIOConfig{
-		Endpoint:  cfg.Storage.Endpoint,
-		AccessKey: cfg.Storage.AccessKey,
-		SecretKey: cfg.Storage.SecretKey,
-		Bucket:    cfg.Storage.Bucket,
-		UseSSL:    cfg.Storage.UseSSL,
+	store, err := storage.NewRedisStorage(storage.RedisConfig{
+		Addr:     cfg.Storage.Addr,
+		Password: cfg.Storage.Password,
 	})
+
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to create storage")
 	}
 
-	// Ensure bucket exists
-	ctx := context.Background()
-	if err := store.EnsureBucket(ctx); err != nil {
-		logger.Fatal().Err(err).Msg("failed to ensure bucket exists")
-	}
-	logger.Info().Str("bucket", cfg.Storage.Bucket).Msg("storage bucket ready")
-
 	// Create and run server
 	srv := server.New(cfg, store, logger)
 
+	ctx := context.Background()
 	// Setup graceful shutdown
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()

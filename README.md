@@ -1,48 +1,49 @@
 # Gradle Build Cache Server
 
-A high-performance, Kubernetes-native HTTP build cache server for Gradle builds. Built with Go and backed by MinIO for reliable, persistent storage.
-
+A high-performance, Kubernetes-native HTTP build cache server for Gradle builds. Built with Go and backed by Redis for fast, in-memory storage.
 
 ## Overview
 
-This project provides a lightweight, self-hosted Gradle Build Cache server implementation that can be deployed in Kubernetes clusters to accelerate build times across teams and CI/CD pipelines. It implements the Gradle HTTP Build Cache API and uses MinIO as a persistent storage backend.
+This project provides a lightweight, self-hosted Gradle Build Cache server that can be deployed in Kubernetes clusters to accelerate build times across teams and CI/CD pipelines. It implements the Gradle HTTP Build Cache API and uses Redis as an in-memory storage backend.
 
 ### Key Features
 
 - **Gradle HTTP Build Cache API** - Fully compatible with Gradle's remote cache protocol
-- **Persistent Storage** - Uses MinIO (S3-compatible) for reliable, scalable artifact storage
-- **Authentication** - HTTP Basic Authentication for access control
+- **In-Memory Storage** - Uses Redis for fast cache lookups and storage
+- **Role-Based Authentication** - HTTP Basic Authentication with separate reader/writer roles
 - **Kubernetes-Native** - Designed for containerized deployments with production-ready Helm charts
-- **Observability** - Built-in Prometheus metrics and structured logging (JSON/text)
+- **Observability** - Built-in Prometheus metrics, Grafana dashboard, and structured logging
+- **Dependency Proxy** - Optional Reposilite integration for caching Maven/Gradle dependencies
 - **Lightweight** - Minimal resource footprint (~256Mi RAM, ~100m CPU)
 - **Health Checks** - Kubernetes-ready liveness and readiness probes
-- **Easy Deployment** - Single Helm command to get started
 
 ### Use Cases
 
 - **Team Development** - Share build cache across development teams
 - **CI/CD Pipelines** - Accelerate build times in Jenkins, GitLab CI, GitHub Actions, etc.
 - **Monorepos** - Reduce build times for large multi-module projects
-- **Multi-Environment Builds** - Share cache between dev, staging, and production builds
 - **Cost Optimization** - Reduce build server compute costs by avoiding redundant work
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                   Kubernetes Cluster                     │
-│                                                          │
-│  ┌─────────────────┐       ┌─────────────────────┐      │
-│  │  Cache Server   │──────▶│       MinIO         │      │
-│  │  (Deployment)   │       │   (StatefulSet)     │      │
-│  │  Port: 8080     │       │   Port: 9000        │      │
-│  └────────┬────────┘       └─────────────────────┘      │
-│           │                                              │
-│  ┌────────▼────────┐                                    │
-│  │    Service      │◀──── Developer Workstations        │
-│  │  Port: 8080     │◀──── CI/CD Pipelines              │
-│  └─────────────────┘◀──── Build Agents                 │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                    Kubernetes Cluster                         │
+│                                                              │
+│  ┌─────────────────┐       ┌──────────────────────────────┐ │
+│  │  Cache Server    │──────▶│  Redis (Deployment)         │ │
+│  │  (Deployment)    │       │  Port: 6379                 │ │
+│  │  Port: 8080      │       │  + Redis Exporter sidecar   │ │
+│  └────────┬─────────┘       └──────────────────────────────┘ │
+│           │                                                   │
+│  ┌────────▼─────────┐       ┌──────────────────────────────┐ │
+│  │    Service        │       │  Reposilite (optional)      │ │
+│  │  Port: 8080       │       │  Maven/Gradle dependency    │ │
+│  └──────────────────┘       │  proxy with caching          │ │
+│           ▲                  └──────────────────────────────┘ │
+│           │                                                   │
+│   Developer Workstations / CI/CD Pipelines                   │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ### Components
@@ -50,8 +51,9 @@ This project provides a lightweight, self-hosted Gradle Build Cache server imple
 | Component | Description | Technology |
 |-----------|-------------|------------|
 | **Cache Server** | HTTP API server implementing Gradle Build Cache protocol | Go, Gin Framework |
-| **Storage Backend** | S3-compatible object storage for cache artifacts | MinIO |
-| **Kubernetes Service** | ClusterIP service for internal access | Kubernetes |
+| **Storage Backend** | In-memory key-value store for cache artifacts | Redis 7 |
+| **Redis Exporter** | Sidecar that exposes Redis metrics to Prometheus | oliver006/redis_exporter |
+| **Reposilite** | Maven/Gradle dependency proxy and cache (optional) | Reposilite 3.x |
 | **Helm Chart** | Declarative deployment configuration | Helm 3 |
 
 ## Quick Start
@@ -61,7 +63,6 @@ This project provides a lightweight, self-hosted Gradle Build Cache server imple
 - Kubernetes cluster (v1.19+)
 - Helm 3.x
 - kubectl configured to access your cluster
-- (Optional) Domain name and TLS certificates for production deployments
 
 ### Installation
 
@@ -71,35 +72,24 @@ git clone https://github.com/kevingruber/theia-shared-cache.git
 cd theia-shared-cache
 ```
 
-2. Configure your deployment by editing `chart/values.yaml`:
-```yaml
-cacheServer:
-  auth:
-    username: "gradle"
-    password: "your-secure-password"  # CHANGE THIS!
-
-minio:
-  auth:
-    accessKey: "your-access-key"      # CHANGE THIS!
-    secretKey: "your-secret-key"      # CHANGE THIS!
-```
-
-3. Deploy using Helm:
+2. Deploy using Helm:
 ```bash
-helm install theia-cache ./chart
+helm install gradle-cache ./chart
 ```
 
-4. Verify the deployment:
+The Redis password is auto-generated on first install and stored as a Kubernetes Secret. No manual credential configuration is needed for the storage backend.
+
+3. Verify the deployment:
 ```bash
 kubectl get pods
-kubectl logs -f deployment/theia-cache
+kubectl logs -f deployment/gradle-cache-cache-server
 ```
 
 ### Testing the Cache
 
 Port-forward the service to your local machine:
 ```bash
-kubectl port-forward svc/theia-cache 8080:8080
+kubectl port-forward svc/gradle-cache-cache 8080:8080
 ```
 
 Test the health endpoint:
@@ -110,43 +100,56 @@ curl http://localhost:8080/ping
 
 Test cache operations:
 ```bash
-# Store a cache entry
-echo "test data" | curl -u gradle:your-password \
-  -X PUT \
+# Store a cache entry (requires writer role)
+curl -X PUT -u writer:changeme-writer \
   -H "Content-Type: application/octet-stream" \
-  --data-binary @- \
+  -d "test data" \
   http://localhost:8080/cache/test-key
 
-# Retrieve the cache entry
-curl -u gradle:your-password http://localhost:8080/cache/test-key
+# Retrieve the cache entry (reader or writer role)
+curl -u reader:changeme-reader http://localhost:8080/cache/test-key
+
+# Check if entry exists
+curl -I -u reader:changeme-reader http://localhost:8080/cache/test-key
 ```
 
 ## Configuration
 
 ### Gradle Configuration
 
-Configure your Gradle builds to use the remote cache by adding to `settings.gradle`:
+Configure your Gradle builds to use the remote cache:
 
+**settings.gradle.kts (Kotlin DSL):**
+```kotlin
+buildCache {
+    remote<HttpBuildCache> {
+        url = uri("http://<release-name>-cache:8080/cache/")
+        credentials {
+            username = "writer"
+            password = "changeme-writer"
+        }
+        isPush = true  // set to false for read-only access
+    }
+}
+```
+
+**settings.gradle (Groovy DSL):**
 ```groovy
 buildCache {
     remote(HttpBuildCache) {
-        url = 'http://theia-cache:8080/cache/'
+        url = 'http://<release-name>-cache:8080/cache/'
         credentials {
-            username = 'gradle'
-            password = 'your-password'
+            username = 'writer'
+            password = 'changeme-writer'
         }
         push = true
     }
 }
 ```
 
-Or via `gradle.properties`:
+**gradle.properties:**
 ```properties
 org.gradle.caching=true
-org.gradle.caching.remote.url=http://theia-cache:8080/cache/
-org.gradle.caching.remote.username=gradle
-org.gradle.caching.remote.password=your-password
-org.gradle.caching.remote.push=true
 ```
 
 ### Helm Chart Configuration
@@ -155,56 +158,20 @@ Key configuration options in `chart/values.yaml`:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `cacheServer.replicaCount` | Number of cache server replicas | `1` |
-| `cacheServer.image.repository` | Container image repository | `ghcr.io/kevingruber/theia-shared-cache/gradle-cache` |
-| `cacheServer.image.tag` | Container image tag | `latest` |
-| `cacheServer.tls.enabled` | Enable TLS/HTTPS | `false` |
-| `cacheServer.tls.secretName` | TLS certificate secret name | `""` |
-| `cacheServer.tls.certManager.enabled` | Use cert-manager for certificates | `false` |
-| `cacheServer.auth.username` | Authentication username | `gradle` |
-| `cacheServer.auth.password` | Authentication password | `changeme` |
-| `cacheServer.config.maxEntrySizeMB` | Maximum cache entry size | `100` |
-| `minio.enabled` | Deploy MinIO with the chart | `true` |
-| `minio.persistence.size` | MinIO storage size | `50Gi` |
-| `minio.auth.accessKey` | MinIO access key | `minioadmin` |
-| `minio.auth.secretKey` | MinIO secret key | `minioadmin` |
+| `enabled` | Enable/disable the entire deployment | `true` |
+| `image.repository` | Cache server image | `ghcr.io/ls1intum/theia-shared-cache/gradle-cache` |
+| `image.tag` | Cache server image tag | `main` |
+| `auth.enabled` | Enable authentication | `true` |
+| `auth.username` | Cache username | `gradle` |
+| `auth.password` | Cache password | `changeme` |
+| `resources.cacheServer` | Cache server resource limits | See values.yaml |
+| `resources.redis` | Redis resource limits | See values.yaml |
+| `tls.enabled` | Enable TLS/HTTPS | `false` |
+| `tls.secretName` | TLS certificate secret name | `""` |
+| `metrics.serviceMonitor.enabled` | Create ServiceMonitor for Prometheus Operator | `false` |
+| `reposilite.enabled` | Deploy Reposilite dependency proxy | `true` |
 
 For a complete list of configuration options, see the [Helm chart documentation](chart/README.md).
-
-### Enabling TLS/HTTPS
-
-To secure communication with TLS, you can use cert-manager or provide your own certificates. Here's a quick example:
-
-**With cert-manager (recommended):**
-```yaml
-cacheServer:
-  tls:
-    enabled: true
-    secretName: gradle-cache-tls
-    certManager:
-      enabled: true
-      issuerName: "letsencrypt-prod"
-      issuerKind: "ClusterIssuer"
-```
-
-**With self-signed certificates:**
-```bash
-# Generate certificate
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout tls.key -out tls.crt \
-  -subj "/CN=cache-server.default.svc.cluster.local"
-
-# Create Kubernetes secret
-kubectl create secret tls gradle-cache-tls --cert=tls.crt --key=tls.key
-
-# Update values.yaml
-cacheServer:
-  tls:
-    enabled: true
-    secretName: gradle-cache-tls
-```
-
-For detailed TLS setup instructions, see the [TLS Setup Guide](docs/tls-setup.md).
 
 ### Environment Variables
 
@@ -212,28 +179,25 @@ The cache server can be configured via environment variables:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `SERVER_PORT` | HTTP server port | `8080` |
-| `SERVER_READ_TIMEOUT` | Request read timeout | `30s` |
-| `SERVER_WRITE_TIMEOUT` | Request write timeout | `120s` |
-| `MINIO_ENDPOINT` | MinIO server endpoint | `minio:9000` |
-| `MINIO_ACCESS_KEY` | MinIO access key | - |
-| `MINIO_SECRET_KEY` | MinIO secret key | - |
-| `CACHE_PASSWORD` | Cache authentication password | - |
-| `LOG_LEVEL` | Logging level (debug, info, warn, error) | `info` |
-| `LOG_FORMAT` | Log format (json, text) | `json` |
+| `REDIS_PASSWORD` | Redis authentication password | Auto-generated |
+| `CACHE_READER_USERNAME` | Reader role username | From values.yaml |
+| `CACHE_READER_PASSWORD` | Reader role password | From values.yaml |
+| `CACHE_WRITER_USERNAME` | Writer role username | From values.yaml |
+| `CACHE_WRITER_PASSWORD` | Writer role password | From values.yaml |
+| `SENTRY_DSN` | Sentry error tracking DSN | Disabled |
 
 ## API Reference
 
 ### Endpoints
 
-| Endpoint | Method | Description | Authentication |
-|----------|--------|-------------|----------------|
-| `/ping` | GET | Health check (liveness probe) | No |
-| `/health` | GET | Storage health check (readiness probe) | No |
-| `/metrics` | GET | Prometheus metrics | No |
-| `/cache/:key` | GET | Retrieve cache entry | Yes |
-| `/cache/:key` | PUT | Store cache entry | Yes |
-| `/cache/:key` | HEAD | Check if cache entry exists | Yes |
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/ping` | GET | No | Health check (liveness probe) |
+| `/health` | GET | No | Storage connectivity check (readiness probe) |
+| `/metrics` | GET | No | Prometheus metrics |
+| `/cache/:key` | GET | reader/writer | Retrieve cache entry |
+| `/cache/:key` | HEAD | reader/writer | Check if cache entry exists |
+| `/cache/:key` | PUT | writer only | Store cache entry |
 
 ### HTTP Status Codes
 
@@ -241,120 +205,156 @@ The cache server can be configured via environment variables:
 |------|-------------|
 | `200 OK` | Cache hit (GET), entry exists (HEAD) |
 | `201 Created` | Cache entry stored successfully (PUT) |
-| `204 No Content` | Entry does not exist (HEAD) |
 | `401 Unauthorized` | Authentication failed |
-| `404 Not Found` | Cache miss (GET) |
-| `413 Payload Too Large` | Entry exceeds maximum size |
+| `403 Forbidden` | Insufficient role (e.g., reader trying to PUT) |
+| `404 Not Found` | Cache miss (GET/HEAD) |
+| `413 Payload Too Large` | Entry exceeds maximum size (default: 100MB) |
 | `500 Internal Server Error` | Server or storage error |
 
 ## Development
 
+### Prerequisites
+- Go 1.24+
+- Docker & Docker Compose
+
+### Local Development with Docker Compose
+
+The fastest way to run the full stack locally:
+
+```bash
+cd src/deployments
+docker compose up --build
+```
+
+This starts all services:
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| Cache Server | http://localhost:8080 | Gradle build cache API |
+| Redis | localhost:6379 | In-memory storage |
+| Redis Exporter | http://localhost:9121 | Redis metrics for Prometheus |
+| Prometheus | http://localhost:9090 | Metrics collection |
+| Grafana | http://localhost:3000 | Dashboards (no login required) |
+| Reposilite | http://localhost:8081 | Dependency proxy |
+
+A pre-built Grafana dashboard ("Gradle Build Cache") is automatically provisioned with panels for cache hit rate, request latency, Redis memory usage, and more.
+
 ### Building from Source
 
-#### Prerequisites
-- Go 1.24+
-- Docker (optional, for containerization)
-
-#### Build the binary
 ```bash
 cd src
 go build -o bin/cache-server ./cmd/server
 ```
 
-#### Run locally
-```bash
-# Set required environment variables
-export MINIO_ENDPOINT=localhost:9000
-export MINIO_ACCESS_KEY=minioadmin
-export MINIO_SECRET_KEY=minioadmin
-export CACHE_PASSWORD=changeme
+### Running Tests
 
-# Run the server
-./bin/cache-server
-```
-
-#### Build Docker image
-```bash
-cd src
-docker build -t theia-cache:dev .
-```
-
-### Testing
-
-Run unit tests:
 ```bash
 cd src
 go test ./...
-```
-
-Run with coverage:
-```bash
-go test -cover ./...
 ```
 
 ### Project Structure
 
 ```
 .
-├── chart/                  # Helm chart for Kubernetes deployment
-│   ├── templates/         # Kubernetes manifests
-│   ├── values.yaml        # Default configuration
-│   └── Chart.yaml         # Chart metadata
-├── src/                   # Go source code
-│   ├── cmd/
-│   │   └── server/        # Main application entry point
+├── chart/                      # Helm chart for Kubernetes deployment
+│   ├── templates/
+│   │   ├── _helpers.tpl        # Shared label templates
+│   │   ├── deployment.yaml     # Cache server Deployment
+│   │   ├── redis-deployment.yaml  # Redis Deployment
+│   │   ├── redis-service.yaml  # Redis Service
+│   │   ├── service.yaml        # Cache server Service
+│   │   ├── configmap.yaml      # Server configuration
+│   │   └── secrets.yaml        # Auto-generated Redis password
+│   ├── values.yaml             # Default configuration
+│   └── Chart.yaml              # Chart metadata
+├── src/                        # Go source code
+│   ├── cmd/server/             # Application entry point
 │   ├── internal/
-│   │   ├── config/        # Configuration management
-│   │   ├── middleware/    # HTTP middleware (auth, logging)
-│   │   ├── server/        # HTTP server and routes
-│   │   └── storage/       # MinIO storage backend
-│   ├── Dockerfile         # Multi-stage Docker build
-│   └── go.mod             # Go module dependencies
-└── .github/
-    └── workflows/         # GitHub Actions CI/CD
+│   │   ├── config/             # Configuration management
+│   │   ├── handler/            # HTTP handlers (GET/PUT/HEAD)
+│   │   ├── middleware/         # Auth, logging, metrics middleware
+│   │   ├── server/             # HTTP server and routes
+│   │   ├── storage/            # Redis storage backend
+│   │   └── telemetry/          # OpenTelemetry setup
+│   ├── deployments/            # Docker Compose + monitoring config
+│   │   ├── docker-compose.yaml
+│   │   ├── prometheus.yaml
+│   │   └── grafana/            # Grafana provisioning & dashboards
+│   ├── configs/config.yaml     # Default app configuration
+│   ├── Dockerfile              # Multi-stage Docker build
+│   └── go.mod                  # Go module dependencies
+└── .github/workflows/          # GitHub Actions CI/CD
 ```
 
 ## Monitoring
 
 ### Prometheus Metrics
 
-The cache server exposes Prometheus metrics at `/metrics`:
+The cache server exposes metrics at `/metrics`:
 
 | Metric | Type | Description |
 |--------|------|-------------|
-| `cache_requests_total` | Counter | Total number of cache requests |
-| `cache_hits_total` | Counter | Number of cache hits |
-| `cache_misses_total` | Counter | Number of cache misses |
-| `cache_errors_total` | Counter | Number of cache errors |
-| `http_request_duration_seconds` | Histogram | HTTP request latency |
+| `gradle_cache_requests_total` | Counter | Total requests by method and status |
+| `gradle_cache_cache_hits` | Counter | Cache hit count |
+| `gradle_cache_cache_misses` | Counter | Cache miss count |
+| `gradle_cache_request_duration_seconds` | Histogram | Request latency (p50/p95/p99) |
+| `gradle_cache_entry_size` | Histogram | Cache entry sizes |
 
-### ServiceMonitor
+Redis metrics are exposed via the redis-exporter sidecar:
 
-If using Prometheus Operator, enable the ServiceMonitor in `values.yaml`:
-```yaml
-metrics:
-  enabled: true
-  serviceMonitor:
-    enabled: true
+| Metric | Type | Description |
+|--------|------|-------------|
+| `redis_memory_used_bytes` | Gauge | Redis memory consumption |
+| `redis_db_keys` | Gauge | Number of cached entries |
+| `redis_keyspace_hits_total` | Counter | Redis-level cache hits |
+| `redis_keyspace_misses_total` | Counter | Redis-level cache misses |
+| `redis_commands_processed_total` | Counter | Total Redis operations |
+
+### Grafana Dashboard
+
+A pre-built dashboard is included at `src/deployments/grafana/dashboards/gradle-build-cache.json`. It can be imported into any Grafana instance and includes panels for:
+
+- Cache hit rate (with color-coded thresholds)
+- Request rate by HTTP method
+- Request latency percentiles (p50, p95, p99)
+- Cache hits vs misses over time
+- Server error rate (5xx)
+- Redis memory usage and trends
+- Redis keyspace hit/miss ratio
+- Redis operations per second
+
+### ServiceMonitor (Prometheus Operator)
+
+If your cluster uses the Prometheus Operator, enable automatic scrape discovery:
+
+```bash
+helm install gradle-cache ./chart --set metrics.serviceMonitor.enabled=true
 ```
 
-## Security Considerations
+Otherwise, Prometheus pod annotations are included by default for annotation-based discovery.
 
-### Current Limitations
+## Security
 
-- **TLS Optional** - TLS/HTTPS is disabled by default. Enable it for production deployments.
-- **Basic Authentication** - Simple username/password authentication.
-- **Single User** - Only one set of credentials supported.
-- **Single Replica** - No built-in high availability (single point of failure).
+### Authentication Model
+
+The cache server uses role-based HTTP Basic Authentication:
+
+| Role | Permissions | Use Case |
+|------|-------------|----------|
+| **reader** | GET, HEAD | CI/CD pipelines that only consume cache |
+| **writer** | GET, HEAD, PUT | Build agents that produce and consume cache |
+
+### Redis Password
+
+The Redis password is auto-generated on first `helm install` and stored in a Kubernetes Secret. Both the cache server and Redis read it from the same Secret. No human ever needs to know this password.
 
 ### Recommendations for Production
 
-1. **Enable TLS** - Encrypt all traffic (see [TLS Setup Guide](docs/tls-setup.md))
-2. **Change default credentials** - Use strong, randomly-generated passwords
+1. **Enable TLS** - Encrypt traffic between Gradle clients and the cache server
+2. **Change default credentials** - Override `auth.password` with strong passwords
 3. **Network Policies** - Restrict access to authorized pods only
-4. **Use Kubernetes Secrets** - Never commit credentials to version control
-5. **Monitor certificate expiration** - Set up alerts for certificate renewal
-6. **Regular updates** - Keep dependencies and base images up to date
+4. **Set Redis memory limits** - Configure `maxmemory` and `maxmemory-policy allkeys-lru` to handle cache eviction gracefully
 
 ## Troubleshooting
 
@@ -366,15 +366,36 @@ kubectl describe pod <pod-name>
 kubectl logs <pod-name>
 ```
 
-**MinIO connection errors**
-- Verify MinIO is running: `kubectl get pods -l app=minio`
-- Check MinIO logs: `kubectl logs -l app=minio`
-- Verify credentials match in both cache and MinIO configurations
+**Redis connection errors**
+- Verify Redis is running: `kubectl get pods -l app.kubernetes.io/component=storage`
+- Check Redis logs: `kubectl logs -l app.kubernetes.io/component=storage`
+- Verify the Redis Secret exists: `kubectl get secret <release-name>-redis-secret`
 
 **Authentication failures**
-- Ensure credentials in Gradle match those in `values.yaml`
-- Check for special characters that need URL encoding
+- Ensure Gradle credentials match those configured in `values.yaml`
+- Check user role — readers cannot PUT, only writers can
 
-**Out of storage**
-- Increase MinIO PVC size in `values.yaml`
-- Clean old cache entries manually via MinIO console
+**Cache not helping (low hit rate)**
+- Verify Gradle has `org.gradle.caching=true` in `gradle.properties`
+- Check that `isPush = true` is set for at least one build agent
+- Different Gradle versions or JDKs produce different cache keys
+
+## Upgrading
+
+### From 0.2.x to 0.3.0
+
+Version 0.3.0 replaces MinIO with Redis as the storage backend.
+
+Changes:
+- Storage backend changed from MinIO (S3-compatible) to Redis (in-memory)
+- Redis password is auto-generated (no manual credential configuration)
+- MinIO StatefulSet replaced with Redis Deployment (no persistent volume needed)
+- Redis exporter sidecar added for Prometheus metrics
+- Grafana dashboard included for local development
+- Helm labels updated to Kubernetes recommended labels (`app.kubernetes.io/*`)
+
+Migration steps:
+1. Cache data cannot be migrated (MinIO objects to Redis keys) — the cache will be cold after upgrade
+2. Uninstall the old release: `helm uninstall <release-name>`
+3. Install the new version: `helm install <release-name> ./chart`
+4. Gradle builds will repopulate the cache automatically on first run

@@ -4,8 +4,8 @@ kind: ConfigMap
 metadata:
   name: {{ .Release.Name }}-config
   labels:
-    app: {{ .Release.Name }}
-    component: cache-server
+    {{- include "theia-shared-cache.labels" . | nindent 4 }}
+    app.kubernetes.io/component: cache-server
 data:
   config.yaml: |
     server:
@@ -20,9 +20,7 @@ data:
       {{- end}}
 
     storage:
-      endpoint: "{{ .Release.Name }}-minio:9000"
-      bucket: "gradle-cache"
-      use_ssl: false
+      addr: "{{ .Release.Name }}-redis:6379"
 
     cache:
       max_entry_size_mb: 100

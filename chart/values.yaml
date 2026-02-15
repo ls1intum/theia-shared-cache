@@ -25,13 +25,6 @@ auth:
     # optimaly from github envrionment secrets
     password: "changeme-writer"
 
-# Storage configuration
-storage:
-  # Persistent volume size for cache data
-  size: 50Gi
-  # Storage class for persistent volume
-  storageClass: "csi-rbd-sc"
-
 # Resource limits
 resources:
   cacheServer:
@@ -42,10 +35,10 @@ resources:
       memory: "1Gi"
       cpu: "500m"
 
-  minio:
+  redis:
     requests:
-      memory: "512Mi"
-      cpu: "250m"
+      memory: "128Mi"
+      cpu: "100m"
     limits:
       memory: "2Gi"
       cpu: "1000m"
