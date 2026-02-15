@@ -164,7 +164,6 @@ Key configuration options in `chart/values.yaml`:
 | `auth.enabled` | Enable authentication | `true` |
 | `auth.username` | Cache username | `gradle` |
 | `auth.password` | Cache password | `changeme` |
-| `storage.db` | Redis database index (0-15) | `0` |
 | `resources.cacheServer` | Cache server resource limits | See values.yaml |
 | `resources.redis` | Redis resource limits | See values.yaml |
 | `tls.enabled` | Enable TLS/HTTPS | `false` |

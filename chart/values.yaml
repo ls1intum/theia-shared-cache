@@ -16,11 +16,6 @@ auth:
   # IMPORTANT: Change this password in production!
   password: "changeme"
 
-# Storage configuration
-storage:
-  # Redis database index (0-15)
-  db: 0
-
 # Resource limits
 resources:
   cacheServer:

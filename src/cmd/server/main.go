@@ -43,7 +43,6 @@ func main() {
 	store, err := storage.NewRedisStorage(storage.RedisConfig{
 		Addr:     cfg.Storage.Addr,
 		Password: cfg.Storage.Password,
-		DB:       cfg.Storage.DB,
 	})
 
 	if err != nil {

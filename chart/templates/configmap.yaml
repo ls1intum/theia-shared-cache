@@ -21,7 +21,6 @@ data:
 
     storage:
       addr: "{{ .Release.Name }}-redis:6379"
-      db: {{ .Values.storage.db }}
 
     cache:
       max_entry_size_mb: 100

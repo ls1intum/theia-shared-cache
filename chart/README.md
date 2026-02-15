@@ -79,7 +79,6 @@ helm install gradle-cache ./chart \
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `storage.db` | Redis database index (0-15) | `0` |
 | `resources.redis.requests.memory` | Memory request | `128Mi` |
 | `resources.redis.requests.cpu` | CPU request | `100m` |
 | `resources.redis.limits.memory` | Memory limit | `2Gi` |

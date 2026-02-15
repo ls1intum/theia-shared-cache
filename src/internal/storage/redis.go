@@ -17,14 +17,13 @@ type RedisStorage struct {
 type RedisConfig struct {
 	Addr     string
 	Password string
-	DB       int
 }
 
 func NewRedisStorage(cfg RedisConfig) (*RedisStorage, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     cfg.Addr,
 		Password: cfg.Password,
-		DB:       cfg.DB,
+		DB:       0,
 	})
 	return &RedisStorage{client: client}, nil
 }
