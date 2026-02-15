@@ -8,13 +8,8 @@ import (
 	"github.com/kevingruber/gradle-cache/internal/config"
 )
 
-// BasicAuth creates a middleware that validates HTTP Basic Authentication.
-func BasicAuth(users []config.UserAuth) gin.HandlerFunc {
-	// Build a map for O(1) lookup
-	credentials := make(map[string]string, len(users))
-	for _, user := range users {
-		credentials[user.Username] = user.Password
-	}
+// CacheAuth creates a middleware that validates HTTP Basic Authentication
+func CacheAuth(auth config.AuthConfig, requireWriter bool) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		username, password, ok := c.Request.BasicAuth()
@@ -24,22 +19,23 @@ func BasicAuth(users []config.UserAuth) gin.HandlerFunc {
 			return
 		}
 
-		expectedPassword, userExists := credentials[username]
-		if !userExists {
+		// Check credentials
+		isReader := username == auth.Reader.Username &&
+			subtle.ConstantTimeCompare([]byte(password), []byte(auth.Reader.Password)) == 1
+		isWriter := username == auth.Writer.Username &&
+			subtle.ConstantTimeCompare([]byte(password), []byte(auth.Writer.Password)) == 1
+
+		if !isReader && !isWriter {
 			c.Header("WWW-Authenticate", `Basic realm="Gradle Build Cache"`)
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
-		// Use constant-time comparison to prevent timing attacks
-		if subtle.ConstantTimeCompare([]byte(password), []byte(expectedPassword)) != 1 {
-			c.Header("WWW-Authenticate", `Basic realm="Gradle Build Cache"`)
-			c.AbortWithStatus(http.StatusUnauthorized)
+		if requireWriter && !isWriter {
+			c.AbortWithStatus(http.StatusForbidden)
 			return
 		}
 
-		// Store username in context for logging/metrics
-		c.Set("username", username)
 		c.Next()
 	}
 }

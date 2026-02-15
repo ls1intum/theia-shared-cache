@@ -42,8 +42,9 @@ type CacheConfig struct {
 }
 
 type AuthConfig struct {
-	Enabled bool       `mapstructure:"enabled"`
-	Users   []UserAuth `mapstructure:"users"`
+	Enabled bool     `mapstructure:"enabled"`
+	Reader  UserAuth `mapstructure:"reader"`
+	Writer  UserAuth `mapstructure:"writer"`
 }
 
 type UserAuth struct {
@@ -106,19 +107,14 @@ func Load(configPath string) (*Config, error) {
 	// Bind specific environment variables
 	v.BindEnv("storage.password", "REDIS_PASSWORD")
 
-	v.BindEnv("auth.users.0.password", "CACHE_PASSWORD")
+	v.BindEnv("auth.reader.password", "CACHE_READER_PASSWORD")
+	v.BindEnv("auth.writer.password", "CACHE_WRITER_PASSWORD")
+
 	v.BindEnv("sentry.dsn", "SENTRY_DSN")
 
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
-	}
-
-	// Handle CACHE_PASSWORD environment variable for default user
-	if cachePassword := v.GetString("CACHE_PASSWORD"); cachePassword != "" {
-		if len(cfg.Auth.Users) > 0 {
-			cfg.Auth.Users[0].Password = cachePassword
-		}
 	}
 
 	return &cfg, nil
@@ -128,15 +124,12 @@ func (c *Config) Validate() error {
 	if c.Storage.Addr == "" {
 		return fmt.Errorf("storage.addr is required")
 	}
-	if c.Auth.Enabled && len(c.Auth.Users) == 0 {
-		return fmt.Errorf("auth.users is required when auth is enabled")
-	}
-	for i, user := range c.Auth.Users {
-		if user.Username == "" {
-			return fmt.Errorf("auth.users[%d].username is required", i)
+	if c.Auth.Enabled {
+		if c.Auth.Reader.Username == "" || c.Auth.Reader.Password == "" {
+			return fmt.Errorf("auth.reader.username and auth.reader.password are required when auth is enabled")
 		}
-		if user.Password == "" {
-			return fmt.Errorf("auth.users[%d].password is required", i)
+		if c.Auth.Writer.Username == "" || c.Auth.Writer.Password == "" {
+			return fmt.Errorf("auth.writer.username and auth.writer.password are required when auth is enabled")
 		}
 	}
 	if c.Server.TLS.Enabled {
