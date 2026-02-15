@@ -18,10 +18,12 @@ services:
 
   redis:
     image: redis:7-alpine
-    command: >
-      redis-server
-      --requirepass "changeme"
-      -loglevel warning
+    command:
+      - redis-server
+      - --requirepass
+      - "changeme"
+      - --loglevel
+      - warning
     ports:
       - "6379:6379"
     volumes:
@@ -31,6 +33,18 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    ports:
+      - "9121:9121"
+    environment:
+      - REDIS_ADDR=redis:6379
+      - REDIS_PASSWORD=changeme
+    depends_on:
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
   prometheus:
@@ -45,6 +59,35 @@ services:
       - "--storage.tsdb.path=/prometheus"
     restart: unless-stopped
 
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  reposilite:
+    image: dzikoysk/reposilite:3.5.26
+    ports:
+      - "8081:8080"
+    environment:
+      - JAVA_OPTS=-Xmx128M
+      - REPOSILITE_OPTS=--token admin:changeme --shared-configuration=/etc/reposilite/configuration.shared.json
+    volumes:
+      - ./reposilite/reposilite.shared.json:/etc/reposilite/configuration.shared.json:ro
+      - reposilite-data:/app/data
+    restart: unless-stopped
+
 volumes:
   redis-data:
   prometheus-data:
+  reposilite-data:
