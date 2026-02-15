@@ -4,8 +4,8 @@ kind: ConfigMap
 metadata:
   name: {{ .Release.Name }}-config
   labels:
-    app: {{ .Release.Name }}
-    component: cache-server
+    {{- include "theia-shared-cache.labels" . | nindent 4 }}
+    app.kubernetes.io/component: cache-server
 data:
   config.yaml: |
     server:
@@ -14,15 +14,14 @@ data:
       write_timeout: 120s
       {{- if .Values.tls.enabled }}
       tls:
-        enabled: true 
+        enabled: true
         cert_file: /etc/certs/tls.crt
         key_file: /etc/certs/tls.key
       {{- end}}
 
     storage:
-      endpoint: "{{ .Release.Name }}-minio:9000"
-      bucket: "gradle-cache"
-      use_ssl: false
+      addr: "{{ .Release.Name }}-redis:6379"
+      db: {{ .Values.storage.db }}
 
     cache:
       max_entry_size_mb: 100

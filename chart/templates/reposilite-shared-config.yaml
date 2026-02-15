@@ -4,8 +4,8 @@ kind: ConfigMap
 metadata:
   name: reposilite-shared-config
   labels:
-    app: {{ .Release.Name }}
-    component: reposilite
+    {{- include "theia-shared-cache.labels" . | nindent 4 }}
+    app.kubernetes.io/component: dependency-cache
 data:
   configuration.shared.json: |
     {

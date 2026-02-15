@@ -2,18 +2,18 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}-cache
+  name: {{ .Release.Name }}-redis
   labels:
     {{- include "theia-shared-cache.labels" . | nindent 4 }}
-    app.kubernetes.io/component: cache-server
+    app.kubernetes.io/component: storage
 spec:
   type: ClusterIP
   ports:
-    - name: http
-      port: 8080
-      targetPort: http
+    - name: redis
+      port: 6379
+      targetPort: redis
       protocol: TCP
   selector:
     {{- include "theia-shared-cache.selectorLabels" . | nindent 6 }}
-    app.kubernetes.io/component: cache-server
+    app.kubernetes.io/component: storage
 {{- end }}
