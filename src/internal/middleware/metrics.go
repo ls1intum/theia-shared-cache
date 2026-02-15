@@ -1,11 +1,12 @@
 package middleware
 
 import (
+	"strconv"
+	"time"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -31,6 +32,9 @@ func NewMetrics() (*Metrics, error) {
 		"gradle_cache.request_duration_seconds",
 		metric.WithDescription("HTTP request duration in seconds"),
 		metric.WithUnit("s"),
+		metric.WithExplicitBucketBoundaries(
+			0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10,
+		),
 	)
 	if err != nil {
 		return nil, err

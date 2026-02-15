@@ -3,7 +3,14 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: 'gradle-cache'
+  - job_name: "gradle-cache"
     static_configs:
-      - targets: ['cache-server:8080']
+      - targets: ["cache-server:8080"]
     metrics_path: /metrics
+  - job_name: "redis"
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+  - job_name: "reposilite"
+    static_configs:
+      - targets: ["reposilite:8081"]
+    metrics_path: /api/prometheus
