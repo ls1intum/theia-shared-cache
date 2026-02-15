@@ -25,7 +25,13 @@ func NewRedisStorage(cfg RedisConfig) (*RedisStorage, error) {
 		Password: cfg.Password,
 		DB:       0,
 	})
-	return &RedisStorage{client: client}, nil
+	storage := &RedisStorage{client: client}
+
+	// Test connection
+	if err := storage.Ping(context.Background()); err != nil {
+		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
+	}
+	return storage, nil
 }
 
 func (s *RedisStorage) redisKey(key string) string {

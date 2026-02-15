@@ -37,7 +37,6 @@ This chart deploys the following components:
 - Redis metrics via redis-exporter sidecar
 - Optional ServiceMonitor for Prometheus Operator
 - Health checks (`/ping`, `/health`)
-- Role-based authentication (reader/writer roles)
 - Optional Reposilite dependency proxy
 - Kubernetes recommended labels (`app.kubernetes.io/*`)
 
@@ -185,7 +184,6 @@ Changes:
 - MinIO StatefulSet replaced with Redis Deployment
 - Redis exporter sidecar for Prometheus metrics
 - Helm labels updated to `app.kubernetes.io/*` standard
-- Reader/writer role-based authentication
 
 Migration steps:
 1. Cache data cannot be migrated — the cache will start cold
