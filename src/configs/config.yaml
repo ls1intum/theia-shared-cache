@@ -4,12 +4,9 @@ server:
   write_timeout: 120s
 
 storage:
-  endpoint: "minio:9000"
-  # These are overridden by environment variables
-  access_key: "${MINIO_ACCESS_KEY}"
-  secret_key: "${MINIO_SECRET_KEY}"
-  bucket: "gradle-cache"
-  use_ssl: false
+  addr: "redis:6379"
+  password: ""
+  db: 0
 
 cache:
   max_entry_size_mb: 100

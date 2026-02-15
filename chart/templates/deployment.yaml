@@ -4,56 +4,36 @@ kind: Deployment
 metadata:
   name: {{ .Release.Name }}-cache-server
   labels:
-    app: {{ .Release.Name }}
-    component: cache-server
+    {{- include "theia-shared-cache.labels" . | nindent 4 }}
+    app.kubernetes.io/component: cache-server
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: {{ .Release.Name }}
-      component: cache-server
+      {{- include "theia-shared-cache.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: cache-server
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}
-        component: cache-server
+        {{- include "theia-shared-cache.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: cache-server
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
         checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
     spec:
       initContainers:
-        - name: wait-for-minio
+        - name: wait-for-redis
           image: busybox:1.36
           command:
             - sh
             - -c
             - |
-              echo "Waiting for MinIO to be ready..."
-              until nc -z {{ .Release.Name }}-minio 9000; do
-                echo "MinIO not ready, waiting..."
+              echo "Waiting for Redis to be ready..."
+              until nc -z {{ .Release.Name }}-redis 6379; do
+                echo "Redis not ready, waiting..."
                 sleep 2
               done
-              echo "MinIO is ready!"
-        - name: create-bucket
-          image: minio/mc:latest
-          command:
-            - sh
-            - -c
-            - |
-              mc alias set minio http://{{ .Release.Name }}-minio:9000 $MINIO_ACCESS_KEY $MINIO_SECRET_KEY
-              mc mb --ignore-existing minio/gradle-cache
-              echo "Bucket created or already exists"
-          env:
-            - name: MINIO_ACCESS_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Release.Name }}-secrets
-                  key: minio-access-key
-            - name: MINIO_SECRET_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Release.Name }}-secrets
-                  key: minio-secret-key
+              echo "Redis is ready!"
       containers:
         - name: cache-server
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -63,21 +43,16 @@ spec:
               containerPort: 8080
               protocol: TCP
           env:
-            - name: MINIO_ACCESS_KEY
+            - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-secrets
-                  key: minio-access-key
-            - name: MINIO_SECRET_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Release.Name }}-secrets
-                  key: minio-secret-key
+                  name: {{ .Release.Name }}-redis-secret
+                  key: redis-password
             {{- if .Values.auth.enabled }}
             - name: CACHE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-secrets
+                  name: {{ .Release.Name }}-redis-secret
                   key: cache-password
             {{- end }}
           args:
